@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#5c3317" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pife Varanda" />
+  <meta name="description" content="Pife de Varanda (Pif-Paf) — Jogo de cartas brasileiro PWA com arraste livre, descarte arrastando para cima, pilhas de jogos, Solo, 2v2, 3v3 e Salas Online." />
+  <title>Pife de Varanda — Jogo de Cartas Brasileiro PWA</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <style>
+    /* =========================================================================
+       1. DESIGN TOKENS — ESTÉTICA "VARANDA & BOTECO BRASILEIRO" (4 TEMAS)
+       ========================================================================= */
+    :root,
+    [data-theme="azulejo"] {
+      --bg-outer: #2c180c;
+      --table-surface: radial-gradient(circle at 50% 35%, #8a5027 0%, #633617 58%, #42220d 100%);
+      --tile-border: repeating-linear-gradient(
+        45deg,
+        #1e3a8a 0px,
+        #1e3a8a 10px,
+        #f8fafc 10px,
+        #f8fafc 14px,
+        #2563eb 14px,
+        #2563eb 24px,
+        #f8fafc 24px,
+        #f8fafc 28px
+      );
+      --panel-bg: rgba(252, 248, 238, 0.97);
+      --panel-soft: rgba(241, 232, 212, 0.93);
+      --panel-border: #1e40af;
+      --text-main: #29170b;
+      --text-muted: #6b4c35;
+      --header-txt: #fef3c7;
+      --accent-primary: #1d4ed8;
+      --accent-primary-txt: #ffffff;
+      --accent-gold: #b45309;
+      --accent-win: #15803d;
+      --accent-danger: #b91c1c;
+      --card-bg: linear-gradient(170deg, #fffdf7 0%, #f5eedc 100%);
+      --card-border: #cbd5e1;
+      --card-back: repeating-linear-gradient(135deg, #1e3a8a 0 6px, #1d4ed8 6px 12px);
+      --suit-red: #dc2626;
+      --suit-black: #1e293b;
+      --font-display: Georgia, 'Palatino Linotype', 'Book Antiqua', serif;
+      --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-panel: 20px;
+      --radius-btn: 13px;
+      --field-bg: rgba(255, 255, 255, 0.6);
+      --row-bg: rgba(255, 255, 255, 0.35);
+    }
+
+    [data-theme="kraft"] {
+      --bg-outer: #3e2c20;
+      --table-surface: radial-gradient(circle at 50% 30%, #cbb392 0%, #b59972 62%, #9a7d56 100%);
+      --tile-border: repeating-linear-gradient(
+        90deg,
+        #5c3a21 0px,
+        #5c3a21 16px,
+        #e7d8c1 16px,
+        #e7d8c1 20px
+      );
+      --panel-bg: rgba(247, 239, 226, 0.97);
+      --panel-soft: rgba(232, 219, 197, 0.94);
+      --panel-border: #6f4e37;
+      --text-main: #2c1e16;
+      --text-muted: #5f483a;
+      --header-txt: #fef3c7;
+      --accent-primary: #7c2d12;
+      --accent-primary-txt: #fff7ed;
+      --accent-gold: #9a3412;
+      --accent-win: #3f6212;
+      --accent-danger: #991b1b;
+      --card-bg: linear-gradient(170deg, #fdf8f0 0%, #efe3cf 100%);
+      --card-border: #a88f73;
+      --card-back: repeating-linear-gradient(45deg, #6f4e37 0 6px, #523826 6px 12px);
+      --suit-red: #b91c1c;
+      --suit-black: #292524;
+      --font-display: Georgia, 'Times New Roman', serif;
+      --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-panel: 16px;
+      --radius-btn: 11px;
+    }
+
+    [data-theme="quiosque"] {
+      --bg-outer: #0e7490;
+      --table-surface: radial-gradient(circle at 50% 25%, #fef3c7 0%, #fde68a 60%, #fcd34d 100%);
+      --tile-border: repeating-linear-gradient(
+        45deg,
+        #0891b2 0px,
+        #0891b2 12px,
+        #ffffff 12px,
+        #ffffff 18px,
+        #f97316 18px,
+        #f97316 30px
+      );
+      --panel-bg: rgba(255, 255, 255, 0.96);
+      --panel-soft: rgba(240, 249, 255, 0.94);
+      --panel-border: #0891b2;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --header-txt: #ffffff;
+      --accent-primary: #0284c7;
+      --accent-primary-txt: #ffffff;
+      --accent-gold: #ea580c;
+      --accent-win: #059669;
+      --accent-danger: #e11d48;
+      --card-bg: linear-gradient(170deg, #ffffff 0%, #f0f9ff 100%);
+      --card-border: #7dd3fc;
+      --card-back: repeating-linear-gradient(135deg, #0891b2 0 6px, #06b6d4 6px 12px);
+      --suit-red: #e11d48;
+      --suit-black: #0f172a;
+      --font-display: system-ui, -apple-system, sans-serif;
+      --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-panel: 22px;
+      --radius-btn: 14px;
+    }
+
+    [data-theme="seresta"] {
+      --bg-outer: #071318;
+      --table-surface: radial-gradient(circle at 50% 30%, #133844 0%, #0b242d 62%, #06161c 100%);
+      --tile-border: repeating-linear-gradient(
+        45deg,
+        #d97706 0px,
+        #d97706 10px,
+        #0f2933 10px,
+        #0f2933 20px
+      );
+      --panel-bg: rgba(13, 36, 46, 0.96);
+      --panel-soft: rgba(20, 52, 66, 0.93);
+      --panel-border: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --header-txt: #fde68a;
+      --accent-primary: #f59e0b;
+      --accent-primary-txt: #1c1002;
+      --accent-gold: #fbbf24;
+      --accent-win: #34d399;
+      --accent-danger: #fb7185;
+      --card-bg: linear-gradient(170deg, #fffdf7 0%, #f1ebd9 100%);
+      --card-border: #fbbf24;
+      --card-back: repeating-linear-gradient(135deg, #b45309 0 6px, #78350f 6px 12px);
+      --suit-red: #dc2626;
+      --suit-black: #0f172a;
+      --font-display: Georgia, 'Palatino Linotype', serif;
+      --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius-panel: 20px;
+      --radius-btn: 13px;
+      --field-bg: rgba(0, 0, 0, 0.3);
+      --row-bg: rgba(255, 255, 255, 0.07);
+    }
+
+    /* Tamanhos de carta responsivos (ajustados por media queries no fim do CSS) */
+    :root {
+      --card-w: 52px;
+      --card-h: 78px;
+      --card-font: 12px;
+      --card-sym: 21px;
+      --pile-w: 76px;
+      --pile-h: 106px;
+    }
+
+    /* =========================================================================
+       2. BASE & MOLDURA DE AZULEJARIA COLONIAL RESPONSIVA (100dvh LOCKED)
+       ========================================================================= */
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: var(--bg-outer);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+    }
+
+    .hidden { display: none !important; }
+    .font-serif-title { font-family: var(--font-display); font-weight: 900; letter-spacing: 0.01em; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    button, input {
+      touch-action: manipulation;
+      color: inherit;
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+
+    input[type="text"] {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .varanda-frame {
+      width: 100%;
+      height: 100dvh;
+      padding: 5px;
+      background: var(--tile-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .varanda-surface {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      background: var(--table-surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: max(8px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .paper-card {
+      background: var(--panel-bg);
+      border: 2px solid var(--panel-border);
+      border-radius: var(--radius-panel);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+    }
+
+    .soft-box {
+      background: var(--panel-soft);
+      border: 1.5px solid rgba(120, 90, 60, 0.28);
+      border-radius: var(--radius-btn);
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: var(--accent-primary-txt);
+      font-weight: 900;
+      border-radius: var(--radius-btn);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.24);
+      transition: transform 0.08s ease, filter 0.12s ease;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-primary:disabled { opacity: 0.42; pointer-events: none; }
+
+    .header-chip {
+      background: rgba(20, 12, 6, 0.62);
+      color: var(--header-txt);
+      border: 1.5px solid rgba(255, 255, 255, 0.24);
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* =========================================================================
+       3. TELA 1: LOBBY EM 3 ABAS (MESA, TEMAS & PERFIL, SALA ONLINE)
+       ========================================================================= */
+    .shell-width {
+      width: 100%;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .main-card {
+      width: 100%;
+      max-width: 580px;
+      margin: auto;
+      max-height: 83dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .profile-banner {
+      padding: 10px 14px;
+      border-bottom: 1.5px solid rgba(120, 90, 60, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .avatar-ring {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 2.5px solid var(--panel-border);
+      background: var(--panel-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      font-size: 23px;
+    }
+
+    .avatar-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 4px;
+      margin: 10px 12px 0;
+      flex-shrink: 0;
+    }
+
+    .nav-tab-btn {
+      padding: 8px 4px;
+      border-radius: calc(var(--radius-btn) - 4px);
+      font-size: 11.5px;
+      font-weight: 900;
+    }
+
+    .tab-scroll {
+      padding: 12px 14px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .tab-scroll::-webkit-scrollbar { width: 4px; }
+    .tab-scroll::-webkit-scrollbar-thumb { background: rgba(120, 90, 60, 0.35); border-radius: 999px; }
+
+    .lbl-micro {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+    .choice-btn {
+      padding: 8px 6px;
+      text-align: center;
+      transition: transform 0.08s ease, border-color 0.12s ease;
+    }
+    .choice-btn:active { transform: scale(0.95); }
+
+    .card-footer {
+      padding: 10px 14px;
+      border-top: 1.5px solid rgba(120, 90, 60, 0.25);
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+       4. TELA 2: MESA DE PIFE (MONTE, LIXEIRA DROP-ZONE & BANDEJA INTERATIVA)
+       ========================================================================= */
+    .opponents-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .opp-seat {
+      padding: 6px 9px;
+      border-radius: 13px;
+      background: var(--panel-bg);
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .opp-seat.turn-now {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+    }
+
+    /* Centro da Mesa: Monte Fechado & Boca do Lixo */
+    .table-center-piles {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      position: relative;
+    }
+
+    .piles-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .pile-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .pile-slot:active { transform: scale(0.94); }
+
+    .card-pile-box {
+      width: var(--pile-w);
+      height: var(--pile-h);
+      border-radius: 13px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.34);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+    }
+
+    .card-pile-box.deck-back {
+      background: var(--card-back);
+      border: 3px solid #ffffff;
+      color: #ffffff;
+    }
+
+    .card-pile-box.discard-face {
+      background: var(--card-bg);
+      border: 2.5px solid var(--card-border);
+      padding: 6px;
+      justify-content: space-between;
+    }
+
+    .pile-highlight {
+      box-shadow: 0 0 0 3px #fbbf24, 0 12px 24px rgba(0, 0, 0, 0.42);
+    }
+
+    @keyframes pulseTrashTarget {
+      0%, 100% { transform: scale(1.06); }
+      50% { transform: scale(1.13); }
+    }
+
+    /* Estado da Lixeira quando o usuário está arrastando uma carta para cima */
+    .discard-drop-active {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.65), 0 16px 32px rgba(0, 0, 0, 0.5) !important;
+      animation: pulseTrashTarget 0.7s infinite ease-in-out;
+    }
+
+    .discard-drop-win {
+      border-color: #22c55e !important;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.75), 0 16px 32px rgba(0, 0, 0, 0.5) !important;
+      animation: pulseTrashTarget 0.65s infinite ease-in-out;
+    }
+
+    .drag-drop-banner {
+      position: absolute;
+      top: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      white-space: nowrap;
+      pointer-events: none;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      background: #dc2626;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      transition: background 0.12s ease;
+    }
+    .drag-drop-banner.win-ready {
+      background: #16a34a;
+    }
+
+    /* =========================================================================
+       5. BANDEJA INTERATIVA DA MÃO: ARRASTAR (LADOS / CIMA) + PILHAS DE JOGOS
+       ========================================================================= */
+    .local-hand-dock {
+      padding: 9px 10px 10px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      position: relative;
+      z-index: 15;
+    }
+
+    /* Container com touch-action: none para o navegador mobile nunca sequestrar o arraste */
+    .hand-board-area {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 6px;
+      min-height: 92px;
+      padding: 8px 4px 4px;
+      touch-action: none;
+    }
+
+    .pife-card-unit {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: 11px;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      padding: 4px 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      cursor: grab;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      touch-action: none;
+    }
+
+    .pife-card-unit:active {
+      cursor: grabbing;
+    }
+
+    .pife-card-unit.selected-card {
+      transform: translateY(-8px) scale(1.03);
+      border-color: var(--accent-primary);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.32);
+      z-index: 6;
+    }
+
+    /* Carta sendo arrastada livremente com o dedo/mouse */
+    .pife-card-unit.dragging-free {
+      z-index: 30;
+      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
+      border-color: var(--accent-gold);
+      pointer-events: none;
+    }
+
+    .pife-card-unit.dragging-to-trash {
+      z-index: 30;
+      box-shadow: 0 20px 38px rgba(220, 38, 38, 0.48);
+      border-color: #ef4444;
+      pointer-events: none;
+    }
+
+    .pife-card-unit.drop-target-card {
+      border-color: var(--accent-gold);
+      box-shadow: -4px 0 0 0 var(--accent-gold), 0 6px 14px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-corner { display: flex; justify-content: space-between; font-size: var(--card-font); font-weight: 900; line-height: 1; }
+    .card-center { font-size: var(--card-sym); text-align: center; line-height: 1; }
+
+    /* Carta recém-comprada */
+    .pife-card-unit.new-card { border-color: #16a34a; }
+    .pife-card-unit.new-card::after {
+      content: 'NOVA';
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #16a34a;
+      color: #fff;
+      font-size: 8px;
+      font-weight: 900;
+      padding: 1px 5px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Carta pega da lixeira: não pode ser descartada nesta vez */
+    .pife-card-unit.locked-card { border-style: dashed; }
+    .pife-card-unit.locked-card::before {
+      content: '🔒';
+      position: absolute;
+      bottom: 2px;
+      left: 3px;
+      font-size: 9px;
+    }
+
+    .pife-card-unit:focus-visible,
+    .pile-slot:focus-visible,
+    button:focus-visible {
+      outline: 3px solid #fbbf24;
+      outline-offset: 2px;
+    }
+
+    /* Montinho Sobreposto de Jogo Pronto (3+ cartas uma por cima da outra) */
+    .meld-stack-group {
+      position: relative;
+      height: calc(var(--card-h) + 4px);
+      display: flex;
+      align-items: flex-end;
+      cursor: pointer;
+      border-radius: 13px;
+      padding: 2px;
+      background: rgba(217, 119, 6, 0.12);
+      border: 1.5px dashed #d97706;
+      transition: transform 0.12s ease;
+    }
+
+    .meld-stack-group:active {
+      transform: scale(0.96);
+    }
+
+    .meld-stack-badge {
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 12;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #ffffff;
+      font-size: 8.5px;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.04em;
+    }
+
+    .stacked-leaf-card {
+      position: absolute;
+      bottom: 2px;
+      width: calc(var(--card-w) - 4px);
+      height: calc(var(--card-h) - 4px);
+      border-radius: 10px;
+      background: var(--card-bg);
+      border: 2px solid #d97706;
+      padding: 4px 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.24);
+      pointer-events: none;
+    }
+
+
+    .reorder-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 10px;
+      background: rgba(120, 90, 60, 0.12);
+    }
+
+    .mini-tool-btn {
+      padding: 5px 9px;
+      border-radius: 8px;
+      font-size: 10.5px;
+      font-weight: 900;
+      background: var(--panel-bg);
+      border: 1px solid rgba(120, 90, 60, 0.32);
+      transition: transform 0.08s ease;
+    }
+    .mini-tool-btn:active { transform: scale(0.95); }
+    .mini-tool-btn:disabled { opacity: 0.38; pointer-events: none; }
+
+    .hand-controls-row {
+      display: grid;
+      grid-template-columns: auto 1fr 1.15fr;
+      gap: 6px;
+      align-items: center;
+    }
+
+    @keyframes pulseBatida {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    .btn-bater-ready {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #ffffff;
+      font-weight: 900;
+      border-radius: var(--radius-btn);
+      animation: pulseBatida 1.1s infinite ease-in-out;
+      box-shadow: 0 6px 18px rgba(21, 128, 61, 0.48);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(15, 10, 5, 0.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 440px;
+      padding: 18px;
+      max-height: 88dvh;
+      overflow-y: auto;
+    }
+
+    @keyframes toastSlide {
+      0% { opacity: 0; transform: translate(-50%, -10px) scale(0.94); }
+      15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      85% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -8px) scale(0.96); }
+    }
+
+    .toast-pill {
+      position: fixed;
+      top: 54px;
+      left: 50%;
+      z-index: 60;
+      max-width: calc(100vw - 24px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 7px 15px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 900;
+      white-space: nowrap;
+      animation: toastSlide 2.6s ease forwards;
+      pointer-events: none;
+    }
+
+    /* =========================================================================
+       6. CADASTRO DE PERFIL (PRIMEIRO ACESSO) & CÂMERA
+       ========================================================================= */
+    .text-field {
+      width: 100%;
+      background: var(--field-bg);
+      border: 1.5px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 15px;
+      font-weight: 900;
+      outline: none;
+      color: var(--text-main);
+    }
+    .text-field:focus { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.45); }
+
+    .profile-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .avatar-ring.avatar-xl {
+      width: 96px;
+      height: 96px;
+      font-size: 50px;
+      border-width: 3px;
+    }
+
+    .photo-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .photo-action-btn {
+      padding: 10px 6px;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .camera-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .camera-box video {
+      width: 220px;
+      height: 220px;
+      max-width: 70vw;
+      max-height: 70vw;
+      object-fit: cover;
+      border-radius: 999px;
+      border: 3px solid var(--panel-border);
+      background: #000;
+    }
+
+    .avatar-choice.is-active {
+      border-color: var(--accent-primary) !important;
+      box-shadow: 0 0 0 2px var(--accent-primary);
+    }
+
+    .form-error {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--accent-danger);
+      min-height: 14px;
+    }
+
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 900;
+      color: var(--text-muted);
+    }
+
+    /* =========================================================================
+       7. RESPONSIVO: TELAS ESTREITAS & CELULAR DEITADO
+       ========================================================================= */
+    @media (max-width: 400px) {
+      :root { --card-w: 45px; --card-h: 68px; --card-font: 11px; --card-sym: 18px; --pile-w: 66px; --pile-h: 92px; }
+      .hand-board-area { gap: 4px; }
+    }
+
+    @media (max-width: 350px) {
+      :root { --card-w: 39px; --card-h: 60px; --card-font: 10px; --card-sym: 15px; }
+      .pife-card-unit { padding: 3px; }
+    }
+
+    @media (max-height: 540px) and (orientation: landscape) {
+      :root { --card-w: 42px; --card-h: 60px; --card-font: 10.5px; --card-sym: 15px; --pile-w: 52px; --pile-h: 72px; }
+      .hide-landscape { display: none !important; }
+      .varanda-surface { overflow-y: auto; padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+      .opp-seat { padding: 3px 7px; }
+      .table-center-piles { gap: 3px; }
+      .piles-row { gap: 14px; }
+      .local-hand-dock { gap: 4px; padding: 5px 8px 6px; }
+      .hand-board-area { min-height: 64px; padding: 6px 2px 2px; flex-wrap: nowrap; }
+      .main-card { max-height: 92dvh; }
+    }
+  </style>
+</head>
+<body data-theme="azulejo">
+
+  <div class="varanda-frame">
+    <div class="varanda-surface">
+
+      <!-- =====================================================================
+           TELA 1: LOBBY EM 3 ABAS (MESA, TEMAS & PERFIL, SALA ONLINE)
+           ===================================================================== -->
+      <div id="lobby-screen" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+        <header class="shell-width top-bar">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#dbeafe); border:2px solid #1e40af; color:#1e3a8a; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; box-shadow:0 4px 12px rgba(0,0,0,0.28);">
+              ♠️
+            </div>
+            <div>
+              <h1 class="font-serif-title" style="margin:0; font-size:16px; color:var(--header-txt); line-height:1.1;">Pife de Varanda</h1>
+              <span style="font-size:10px; color:var(--header-txt); opacity:0.86;">Arraste para Organizar ou Descartar • Solo, 2v2, 3v3 &amp; Salas</span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" id="btn-cycle-theme" class="header-chip" style="padding:7px 10px; font-size:12px; font-weight:900;" title="Trocar Tema">🎨</button>
+            <button type="button" id="btn-mute" class="header-chip" style="padding:7px 10px; font-size:13px; font-weight:900;" title="Som">🔊</button>
+            <button type="button" id="btn-help" class="header-chip" style="padding:7px 10px; font-size:12px; font-weight:900;" title="Regras do Pife">?</button>
+          </div>
+        </header>
+
+        <main class="paper-card main-card">
+          <!-- Banner de Perfil -->
+          <div class="profile-banner">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <div id="lobby-avatar-ring" class="avatar-ring">☕</div>
+              <div style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span id="lobby-player-name" class="font-serif-title" style="font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Jogador</span>
+                  <span id="lobby-wins-badge" style="font-size:10px; padding:2px 7px; border-radius:999px; background:rgba(180,83,9,0.14); color:var(--accent-gold); font-weight:900;">🏆 0 batidas</span>
+                </div>
+                <div id="lobby-match-summary" style="font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  👤 Solo (4P) · Estouro 100 pts · Bots Médio
+                </div>
+              </div>
+            </div>
+            <button type="button" id="btn-edit-profile-shortcut" class="soft-box" style="padding:7px 10px; font-size:11px; font-weight:900; flex-shrink:0;">
+              👤 Perfil
+            </button>
+          </div>
+
+          <!-- 3 Abas Limpas -->
+          <nav class="soft-box nav-tabs" role="tablist">
+            <button type="button" data-tab="play" class="nav-tab-btn">🃏 Mesa</button>
+            <button type="button" data-tab="profile" class="nav-tab-btn">🎨 Temas &amp; Perfil</button>
+            <button type="button" data-tab="room" class="nav-tab-btn">🌐 Sala Online</button>
+          </nav>
+
+          <div class="tab-scroll">
+
+            <!-- ABA 1: 🃏 MESA -->
+            <section id="panel-play" style="display:flex; flex-direction:column; gap:11px;">
+              <div>
+                <span class="lbl-micro">Formato da Mesa</span>
+                <div class="grid-3">
+                  <button type="button" data-mode="solo" class="soft-box choice-btn">
+                    <div style="font-size:16px;">👤</div>
+                    <div style="font-size:11px; font-weight:900; margin-top:2px;">Solo</div>
+                    <div style="font-size:9px; color:var(--text-muted);">Individual</div>
+                  </button>
+                  <button type="button" data-mode="duo" class="soft-box choice-btn">
+                    <div style="font-size:16px;">🤝</div>
+                    <div style="font-size:11px; font-weight:900; margin-top:2px;">Em Dupla</div>
+                    <div style="font-size:9px; color:var(--text-muted);">2 vs 2 (4P)</div>
+                  </button>
+                  <button type="button" data-mode="team" class="soft-box choice-btn">
+                    <div style="font-size:16px;">🛡️</div>
+                    <div style="font-size:11px; font-weight:900; margin-top:2px;">Em Equipe</div>
+                    <div style="font-size:9px; color:var(--text-muted);">3 vs 3 (6P)</div>
+                  </button>
+                </div>
+              </div>
+
+              <div id="solo-count-box">
+                <span class="lbl-micro">Jogadores na Mesa Solo (Completa com Bots)</span>
+                <div class="grid-3">
+                  <button type="button" data-count="2" class="soft-box choice-btn"><strong style="font-size:11.5px;">2 Jogadores</strong></button>
+                  <button type="button" data-count="3" class="soft-box choice-btn"><strong style="font-size:11.5px;">3 Jogadores</strong></button>
+                  <button type="button" data-count="4" class="soft-box choice-btn"><strong style="font-size:11.5px;">4 Jogadores</strong></button>
+                </div>
+              </div>
+
+              <div class="grid-2" style="gap:8px;">
+                <div>
+                  <span class="lbl-micro">Regra de Vitória</span>
+                  <div class="grid-2">
+                    <button type="button" data-scoring="single" class="soft-box choice-btn"><strong style="font-size:10px;">Batida Única</strong></button>
+                    <button type="button" data-scoring="points" class="soft-box choice-btn"><strong style="font-size:10px;">Estouro 100p</strong></button>
+                  </div>
+                </div>
+                <div>
+                  <span class="lbl-micro">Nível dos Bots</span>
+                  <div class="grid-3">
+                    <button type="button" data-diff="easy" class="soft-box choice-btn"><strong style="font-size:10px;">Fácil</strong></button>
+                    <button type="button" data-diff="medium" class="soft-box choice-btn"><strong style="font-size:10px;">Médio</strong></button>
+                    <button type="button" data-diff="hard" class="soft-box choice-btn"><strong style="font-size:10px;">Mestre</strong></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="soft-box" style="padding:9px 11px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div>
+                  <div style="font-size:11.5px; font-weight:900;">📚 Empilhar Jogos Automaticamente</div>
+                  <div style="font-size:10px; color:var(--text-muted);">Junta 3 cartas prontas uma sobre a outra na mão</div>
+                </div>
+                <button type="button" id="btn-toggle-autostack" class="btn-primary" style="padding:6px 12px; font-size:11px;">ATIVO</button>
+              </div>
+
+              <div class="soft-box" style="padding:9px 11px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div>
+                  <div style="font-size:11.5px; font-weight:900;">🧩 Jogos Longos (4+ cartas)</div>
+                  <div style="font-size:10px; color:var(--text-muted);">Clássico: só jogos de 3. Longos: aceita sequência 4-5-6-7 e quadra</div>
+                </div>
+                <button type="button" id="btn-toggle-longmelds" class="btn-primary" style="padding:6px 12px; font-size:11px;">CLÁSSICO</button>
+              </div>
+            </section>
+
+            <!-- ABA 2: 🎨 TEMAS & PERFIL -->
+            <section id="panel-profile" class="hidden" style="display:flex; flex-direction:column; gap:11px;">
+              <div>
+                <span class="lbl-micro">Estilo Visual da Mesa &amp; Azulejaria</span>
+                <div class="grid-2">
+                  <button type="button" data-set-theme="azulejo" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
+                    <div style="font-size:12px; font-weight:900;">🏛️ Azulejo &amp; Cedro</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Madeira quente &amp; azul-cobalto</div>
+                  </button>
+                  <button type="button" data-set-theme="kraft" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
+                    <div style="font-size:12px; font-weight:900;">☕ Café &amp; Papel Kraft</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Textura artesanal &amp; terracota</div>
+                  </button>
+                  <button type="button" data-set-theme="quiosque" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
+                    <div style="font-size:12px; font-weight:900;">🏖️ Quiosque &amp; Brisa</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Areia clara, turquesa &amp; coral</div>
+                  </button>
+                  <button type="button" data-set-theme="seresta" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
+                    <div style="font-size:12px; font-weight:900;">🌙 Seresta Noturna</div>
+                    <div style="font-size:10px; color:var(--text-muted);">Azul-petróleo &amp; latão dourado</div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <span class="lbl-micro">Seu Perfil</span>
+                <div class="soft-box" style="padding:10px 12px; display:flex; align-items:center; gap:11px;">
+                  <div id="profile-preview-ring" class="avatar-ring" style="width:58px; height:58px; font-size:28px;">☕</div>
+                  <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                    <span id="profile-preview-name" class="font-serif-title" style="font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Jogador</span>
+                    <div id="profile-stats-row" class="stats-row"></div>
+                  </div>
+                  <button type="button" id="btn-open-profile" class="btn-primary" style="padding:8px 11px; font-size:11px; flex-shrink:0;">✏️ Editar</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ABA 3: 🌐 SALA ONLINE (P2P + QR CODE + LINK) -->
+            <section id="panel-room" class="hidden" style="display:flex; flex-direction:column; gap:10px;">
+              <div id="room-role-line" class="soft-box" style="padding:8px 11px; font-size:11.5px; font-weight:900;">👑 Você é o dono desta mesa.</div>
+
+              <div class="soft-box" style="padding:11px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div>
+                  <span class="lbl-micro" style="margin:0;">Código da Mesa</span>
+                  <span id="room-code-display" class="font-mono" style="font-size:20px; font-weight:900; letter-spacing:0.16em; color:var(--accent-primary);">PIFE</span>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" id="btn-toggle-qr" class="paper-card" style="padding:8px 11px; border-radius:12px; font-size:11px; font-weight:900;">QR Code</button>
+                  <button type="button" id="btn-share-link" class="paper-card" style="padding:8px 11px; border-radius:12px; font-size:11px; font-weight:900;">
+                    <span id="share-link-lbl">🔗 Convidar</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="room-qr-box" class="soft-box hidden" style="padding:12px; display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <div id="room-qr-svg" style="background:#ffffff; color:#29170b; padding:10px; border-radius:14px; border:2px solid var(--panel-border); min-width:120px; min-height:120px; display:flex; align-items:center; justify-content:center; font-size:11px; text-align:center;"></div>
+                <span style="font-size:11px; color:var(--text-muted);">Aponte a câmera do celular para sentar na mesa</span>
+                <span id="room-qr-url" class="font-mono" style="font-size:10px; color:var(--text-muted); word-break:break-all; text-align:center; user-select:text; -webkit-user-select:text;"></span>
+              </div>
+
+              <div class="soft-box" style="padding:10px 12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span class="lbl-micro" style="margin:0;">Jogadores na Mesa</span>
+                  <span id="room-members-count" style="font-size:11px; font-weight:900; color:var(--accent-win);">1 sentado</span>
+                </div>
+                <div id="room-members-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+              </div>
+
+              <div class="soft-box" style="padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="font-size:12px; font-weight:900;">Entrar em mesa:</span>
+                <div style="display:flex; gap:6px;">
+                  <input id="input-room-join" type="text" maxlength="4" placeholder="CÓD." class="paper-card font-mono" style="width:72px; padding:7px; border-radius:10px; font-size:12px; font-weight:900; text-transform:uppercase; text-align:center; outline:none;" />
+                  <button type="button" id="btn-room-join" class="btn-primary" style="padding:7px 14px; font-size:11px; text-transform:uppercase;">Entrar</button>
+                </div>
+              </div>
+
+              <button type="button" id="btn-room-leave" class="soft-box hidden" style="padding:10px; font-size:12px; font-weight:900; color:var(--accent-danger);">🚪 Sair desta mesa e criar a minha</button>
+
+              <div style="font-size:10px; color:var(--text-muted); line-height:1.4;">
+                A sala online conecta os aparelhos direto (P2P) via PeerJS. Precisa de internet nos dois lados.
+              </div>
+            </section>
+
+          </div>
+
+          <div class="card-footer">
+            <button type="button" id="btn-start-match" class="btn-primary" style="width:100%; padding:14px; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>🃏</span>
+              <span id="start-match-label">DAR AS CARTAS (9 CARTAS)</span>
+            </button>
+          </div>
+        </main>
+
+        <footer class="shell-width hide-landscape" style="text-align:center; font-size:10px; color:var(--header-txt); opacity:0.9;">
+          Arraste para os lados para ordenar • Arraste uma carta para cima para descartar na Lixeira!
+        </footer>
+      </div>
+
+      <!-- =====================================================================
+           TELA 2: MESA DE JOGO DO PIFE
+           ===================================================================== -->
+      <div id="game-screen" class="hidden" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; gap:5px;">
+        <header class="shell-width top-bar">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="game-round-badge" class="header-chip" style="padding:5px 10px; font-size:11px; font-weight:900;">Mão 1</span>
+            <span id="game-mode-badge" class="header-chip" style="padding:5px 10px; font-size:11px; font-weight:900;">Solo</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:5px;">
+            <button type="button" id="btn-game-theme" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Trocar Tema">🎨</button>
+            <button type="button" id="btn-game-mute" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Som">🔊</button>
+            <button type="button" id="btn-game-help" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Regras">?</button>
+            <button type="button" id="btn-game-exit" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Sair">✕</button>
+          </div>
+        </header>
+
+        <!-- Assentos dos Demais Jogadores na Mesa -->
+        <section id="opponents-strip" class="shell-width opponents-strip"></section>
+
+        <!-- Centro da Mesa: Monte Fechado & Boca do Lixo -->
+        <main class="shell-width table-center-piles">
+          <div id="turn-status-pill" class="header-chip" style="padding:5px 14px; font-size:11.5px; font-weight:900; text-align:center;">
+            Sua vez! Compre do Monte ou da Lixeira.
+          </div>
+
+          <div id="drag-discard-hint" class="drag-drop-banner hidden">
+            🗑️ SOLTE PARA DESCARTAR
+          </div>
+
+          <div class="piles-row">
+            <!-- Monte Fechado -->
+            <div id="pile-stock-btn" class="pile-slot" role="button" tabindex="0" aria-label="Comprar do Monte Fechado">
+              <div id="stock-card-box" class="card-pile-box deck-back">
+                <span style="font-size:24px;">🃏</span>
+                <span id="stock-count-lbl" style="font-size:11px; font-weight:900; margin-top:4px;">–</span>
+              </div>
+              <span class="header-chip" style="padding:2px 8px; font-size:10px; font-weight:900;">MONTE</span>
+            </div>
+
+            <!-- Boca do Lixo (Alvo de Descarte por Toque ou Arraste para Cima) -->
+            <div id="pile-discard-btn" class="pile-slot" role="button" tabindex="0" aria-label="Comprar ou Descartar na Lixeira">
+              <div id="discard-card-box" class="card-pile-box discard-face">
+                <span style="font-size:11px; color:var(--text-muted); font-weight:900; margin:auto;">VAZIO</span>
+              </div>
+              <span id="discard-pile-lbl" class="header-chip" style="padding:2px 8px; font-size:10px; font-weight:900;">LIXEIRA</span>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center;">
+            <div id="melds-summary-pill" class="header-chip" style="padding:4px 12px; font-size:11px; font-weight:900;">
+              📚 Em jogos: 0/9
+            </div>
+            <div id="score-pill" class="header-chip hidden" style="padding:4px 12px; font-size:11px; font-weight:900;"></div>
+          </div>
+        </main>
+
+        <!-- Bandeja Interativa da Mão do Jogador Local -->
+        <section class="shell-width paper-card local-hand-dock">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+              <div id="local-seat-avatar" class="avatar-ring" style="width:28px; height:28px; font-size:14px; border-width:2px;">☕</div>
+              <div style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                  <span id="local-seat-name" class="font-serif-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Você</span>
+                  <span id="local-team-badge" class="hidden" style="font-size:9px; padding:1px 6px; border-radius:6px; font-weight:900;">DUPLA A</span>
+                </div>
+                <div id="local-hand-hint" class="hide-landscape" style="font-size:9.5px; color:var(--text-muted);">Arraste ◀▶ para ordenar • Arraste ⬆️ ou toque 2x para descartar</div>
+              </div>
+            </div>
+
+            <div style="text-align:right;">
+              <span id="local-points-badge" style="font-size:11px; font-weight:900; color:var(--accent-gold);">0 pts</span>
+            </div>
+          </div>
+
+          <!-- Área de Cartas Livres + Pilhas Sobrepostas de Jogos -->
+          <div id="hand-board-area" class="hand-board-area"></div>
+
+          <!-- Barra de Organização Manual & Agrupamento de Jogos -->
+          <div class="reorder-bar">
+            <div style="display:flex; gap:4px;">
+              <button type="button" id="btn-move-left" class="mini-tool-btn" title="Mover carta para esquerda" disabled>◀</button>
+              <button type="button" id="btn-move-right" class="mini-tool-btn" title="Mover carta para direita" disabled>▶</button>
+            </div>
+
+            <button type="button" id="btn-stack-melds" class="mini-tool-btn" style="color:var(--accent-gold); border-color:var(--accent-gold);">
+              📚 Empilhar Jogos
+            </button>
+
+            <button type="button" id="btn-sort-hand" class="mini-tool-btn">
+              🪄 Ordenar
+            </button>
+          </div>
+
+          <!-- Botões Principais de Abertura, Descarte e Batida -->
+          <div class="hand-controls-row">
+            <button type="button" id="btn-expand-all" class="soft-box" style="padding:10px 9px; font-size:10.5px; font-weight:900;" title="Abrir todas as pilhas">
+              📂 Abrir
+            </button>
+            <button type="button" id="btn-discard-selected" class="btn-primary" style="padding:10px 8px; font-size:11.5px; text-transform:uppercase;">
+              🗑️ Descartar
+            </button>
+            <button type="button" id="btn-bater" class="btn-primary" style="padding:10px 8px; font-size:12px; text-transform:uppercase;">
+              🏆 BATER!
+            </button>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+  <!-- Avisos rápidos (fora das telas para aparecer no lobby e na mesa) -->
+  <div id="toast-slot" aria-live="polite"></div>
+
+  <!-- =========================================================================
+       MODAL 1: REGRAS DO PIFE (PIF-PAF)
+       ========================================================================= -->
+  <div id="modal-rules" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+    <div class="paper-card modal-box" style="display:flex; flex-direction:column; gap:11px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="rules-title" class="font-serif-title" style="margin:0; font-size:18px;">Como Jogar &amp; Organizar Sua Mão</h3>
+        <button type="button" id="btn-close-rules" class="soft-box" style="width:32px; height:32px; border-radius:999px; font-weight:900;" aria-label="Fechar">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; line-height:1.45;">
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:var(--accent-primary);">🔄 Sua Vez:</strong>
+          <div>1. <strong>Compre</strong> uma carta do <strong>MONTE</strong> ou a de cima da <strong>LIXEIRA</strong>.</div>
+          <div>2. <strong>Descarte</strong> uma carta. A carta pega da lixeira (🔒) não pode voltar para ela na mesma vez.</div>
+        </div>
+
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:var(--accent-primary);">✋ Arraste para Ordenar ou Descartar:</strong>
+          <div>• <strong>Arraste para os lados (◀ ▶)</strong> para organizar suas cartas.</div>
+          <div>• <strong>Arraste para cima (⬆️ até a Lixeira)</strong>, dê <strong>dois toques rápidos</strong> na carta ou selecione e use <code>🗑️ Descartar</code>.</div>
+          <div>• Teclado: <code>Enter</code> seleciona, <code>◀ ▶</code> move, <code>Delete</code> descarta.</div>
+        </div>
+
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:var(--accent-gold);">📚 Jogos (Cartas Sobrepostas):</strong>
+          <div>• <strong>Trinca</strong>: 3 cartas de mesmo valor e naipes diferentes (ex.: <code>7♠ 7♥ 7♦</code>).</div>
+          <div>• <strong>Sequência</strong>: mesmo naipe em ordem (ex.: <code>4♣ 5♣ 6♣</code>, <code>A-2-3</code> ou <code>Q-K-A</code>).</div>
+          <div>• Modo <strong>Jogos Longos</strong>: aceita sequências de 4+ cartas e quadras.</div>
+          <div>• Toque num montinho para abri-lo.</div>
+        </div>
+
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:var(--accent-win);">🏆 Como Bater:</strong>
+          <div>Depois de comprar, se 9 das suas 10 cartas formam jogos, descarte a que sobra (ou toque em <strong>🏆 BATER!</strong>).</div>
+        </div>
+
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:var(--accent-danger);">💥 Estouro 100 pts:</strong>
+          <div>Quem não bateu soma os pontos das cartas fora de jogos (A=1, figuras=10). Quando alguém (ou uma equipe) chega a 100, a partida acaba e vence quem tem <strong>menos pontos</strong>.</div>
+        </div>
+      </div>
+
+      <button type="button" id="btn-ok-rules" class="btn-primary" style="width:100%; padding:11px; font-size:12px; text-transform:uppercase;">Entendi!</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: FIM DE MÃO / VITÓRIA DA PARTIDA
+       ========================================================================= -->
+  <div id="modal-round-end" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="round-end-title">
+    <div class="paper-card modal-box" style="max-width:390px; text-align:center; display:flex; flex-direction:column; gap:12px;">
+      <div id="round-end-emoji" style="font-size:44px; line-height:1;">🏆</div>
+      <div>
+        <span id="round-end-sub" style="font-size:10px; font-weight:900; text-transform:uppercase; color:var(--accent-gold);">Batida Confirmada!</span>
+        <h3 id="round-end-title" class="font-serif-title" style="margin:4px 0; font-size:20px;">Você Bateu!</h3>
+      </div>
+
+      <div id="round-end-champion" class="hidden" style="padding:9px 10px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#b45309); color:#fff; font-size:14px; font-weight:900;"></div>
+
+      <div id="round-end-melds" class="soft-box" style="padding:8px 10px; font-size:11.5px; font-weight:900;"></div>
+
+      <div id="round-end-list" class="soft-box" style="padding:10px 12px; font-size:12px; display:flex; flex-direction:column; gap:6px; text-align:left;"></div>
+
+      <div style="display:flex; gap:8px;">
+        <button type="button" id="btn-next-hand" class="btn-primary" style="flex:1; padding:12px; font-size:12.5px; text-transform:uppercase;">Próxima Mão</button>
+        <button type="button" id="btn-end-lobby" class="soft-box" style="padding:12px 14px; font-size:12px; font-weight:900;">Lobby</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: CADASTRO / EDIÇÃO DE PERFIL (NOME + FOTO DA CÂMERA/GALERIA + ÍCONES)
+       ========================================================================= -->
+  <div id="modal-profile" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="paper-card modal-box" style="display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <div>
+          <h3 id="profile-modal-title" class="font-serif-title" style="margin:0; font-size:19px;">Bem-vindo à Varanda! ☕</h3>
+          <div id="profile-modal-sub" style="font-size:11.5px; color:var(--text-muted); margin-top:3px;">Crie seu perfil para sentar à mesa.</div>
+        </div>
+        <button type="button" id="btn-close-profile" class="soft-box hidden" style="width:32px; height:32px; border-radius:999px; font-weight:900; flex-shrink:0;" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="profile-hero">
+        <div id="profile-draft-ring" class="avatar-ring avatar-xl">☕</div>
+
+        <div id="camera-box" class="soft-box camera-box hidden" style="width:100%;">
+          <video id="camera-video" playsinline autoplay muted></video>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">
+            <button type="button" id="btn-camera-shot" class="btn-primary" style="padding:9px 14px; font-size:12px;">📸 Tirar Foto</button>
+            <button type="button" id="btn-camera-flip" class="soft-box" style="padding:9px 12px; font-size:12px; font-weight:900;">🔄 Virar</button>
+            <button type="button" id="btn-camera-cancel" class="soft-box" style="padding:9px 12px; font-size:12px; font-weight:900;">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="photo-actions">
+          <button type="button" id="btn-photo-camera" class="soft-box photo-action-btn">📷 Câmera</button>
+          <label class="soft-box photo-action-btn">
+            🖼️ Galeria
+            <input id="input-photo-gallery" type="file" accept="image/*" style="display:none;" />
+          </label>
+        </div>
+        <label id="camera-fallback-label" class="soft-box photo-action-btn hidden" style="width:100%;">
+          📱 Abrir câmera do aparelho
+          <input id="input-photo-capture" type="file" accept="image/*" capture="user" style="display:none;" />
+        </label>
+        <button type="button" id="btn-photo-remove" class="soft-box hidden" style="padding:6px 12px; font-size:11px; font-weight:900;">🗑️ Remover foto</button>
+      </div>
+
+      <div>
+        <label for="input-draft-name" class="lbl-micro">Seu nome na mesa</label>
+        <input id="input-draft-name" class="text-field" type="text" maxlength="14" autocomplete="nickname" placeholder="Ex: Carlos, Vó Maria, Bia..." />
+        <div id="profile-form-error" class="form-error"></div>
+      </div>
+
+      <div>
+        <span class="lbl-micro">Ou escolha um ícone</span>
+        <div id="avatar-picker-grid" class="grid-4"></div>
+      </div>
+
+      <button type="button" id="btn-profile-save" class="btn-primary" style="width:100%; padding:13px; font-size:14px; text-transform:uppercase;">Sentar à Mesa ➜</button>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

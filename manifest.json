@@ -1,0 +1,18 @@
+{
+  "name": "Pife de Varanda — Jogo de Cartas Brasileiro",
+  "short_name": "Pife Varanda",
+  "description": "Jogo de cartas brasileiro Pife (Pif-Paf) com arraste livre, descarte arrastando para cima, pilhas de jogos, Solo, 2v2, 3v3 e Salas Online.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2c180c",
+  "theme_color": "#5c3317",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
