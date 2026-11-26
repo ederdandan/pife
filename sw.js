@@ -1,5 +1,5 @@
 /* Service Worker do Pife de Varanda: rede primeiro, cache como reserva offline. */
-const CACHE = 'pife-varanda-v8';
+const CACHE = 'pife-varanda-v9';
 const APP_SHELL = [
   './',
   './index.html',

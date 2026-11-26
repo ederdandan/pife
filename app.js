@@ -982,22 +982,33 @@
         return;
       }
 
-      let worstUid = null;
-      let worstScore = Infinity;
-      bot.hand.forEach(c => {
-        if (c.uid === state.lockedDiscardUid) return;
-        const rest = bot.hand.filter(x => x.uid !== c.uid);
-        const coveredAfter = analyzeHandMelds(rest).covered;
-        const pairHelp = evaluateCardUsefulness(rest, c);
-        const totalValue = coveredAfter * 60 + pairHelp - c.pts * 0.4;
-        if (totalValue < worstScore) {
-          worstScore = totalValue;
-          worstUid = c.uid;
-        }
-      });
-
+      const worstUid = pickBotDiscardUid(bot.hand);
       if (worstUid !== null) discardCardAction(bot.id, worstUid);
     }
+  }
+
+  // Quanto vale MANTER cada carta; o bot descarta a de menor valor.
+  // - cartas que sustentam um jogo pronto valem muito (perdê-las desmancha o jogo);
+  // - curinga nunca sai (só na batida, que é tratada antes);
+  // - entre as soltas, sai a sem vizinhos/pares e de mais pontos.
+  function pickBotDiscardUid(hand) {
+    const coveredNow = analyzeHandMelds(hand).covered;
+    let worstUid = null;
+    let worstKeep = Infinity;
+    hand.forEach(c => {
+      if (c.uid === state.lockedDiscardUid) return;
+      const rest = hand.filter(x => x.uid !== c.uid);
+      const meldLoss = coveredNow - analyzeHandMelds(rest).covered;
+      const keep = meldLoss * 100 +
+        evaluateCardUsefulness(rest, c) +
+        (isWild(c) ? 1000 : 0) -
+        cardPts(c) * 0.5;
+      if (keep < worstKeep) {
+        worstKeep = keep;
+        worstUid = c.uid;
+      }
+    });
+    return worstUid;
   }
 
   /* -------------------------------------------------------------------------
