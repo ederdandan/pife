@@ -247,6 +247,18 @@
     { val: 13, label: 'K', pts: 10 }
   ];
 
+  // Variações regionais do Pife. Em todas: no máximo 1 curinga por jogo
+  // (cada jogo precisa de pelo menos 2 cartas "de verdade") e curinga que
+  // sobra na mão vale WILD_PTS de penalidade.
+  const VARIANTS = {
+    classico: { label: 'Clássico', short: 'Clássico', toast: '🃏 Clássico: sem curingas.' },
+    coringa: { label: 'Com Coringas', short: 'Coringas ★', toast: '★ Com Coringas: 4 coringas no baralho, valem qualquer carta.' },
+    dois: { label: '2 é Curinga', short: '2 Curinga', toast: '★ 2 é Curinga: todo 2 substitui qualquer carta (ou vale como 2).' },
+    vira: { label: 'Vira', short: 'Vira', toast: '★ Vira: uma carta é virada na mesa; a SEGUINTE a ela é o curinga.' }
+  };
+  const WILD_PTS = 20;
+  const JOKER_SUIT = 'X';
+
   function getSessionId() {
     try {
       let id = sessionStorage.getItem(SESSION_ID_KEY);
@@ -268,6 +280,8 @@
     botDiff: 'medium',
     autoStackMelds: true,
     longMelds: false,
+    variant: 'classico', // chave de VARIANTS
+    viraCard: null, // variação "vira": carta virada que define o curinga
 
     roomCode: 'PIFE',
     isHost: true,
@@ -328,6 +342,11 @@
      5. BARALHO DUPLO (104 CARTAS) & SOLVER EXATO DE JOGOS
      ------------------------------------------------------------------------- */
   function makeCard(uid, suitId, val) {
+    if (suitId === JOKER_SUIT) {
+      return Number.isInteger(uid)
+        ? { uid, suit: JOKER_SUIT, sym: '★', color: 'joker', suitOrder: 4, val: 0, label: 'JK', pts: WILD_PTS }
+        : null;
+    }
     const s = SUITS.find(x => x.id === suitId);
     const r = RANKS.find(x => x.val === val);
     if (!s || !r || !Number.isInteger(uid)) return null;
@@ -338,13 +357,46 @@
     return c && typeof c === 'object' ? makeCard(c.uid, c.suit, c.val) : null;
   }
 
-  function buildDoubleDeck104() {
+  // 2 baralhos (104 cartas) + 4 coringas na variação "Com Coringas".
+  function buildDeck() {
     const deck = [];
     let uid = 1;
     for (let copy = 0; copy < 2; copy++) {
       SUITS.forEach(s => RANKS.forEach(r => deck.push(makeCard(uid++, s.id, r.val))));
     }
+    if (state.variant === 'coringa') {
+      for (let j = 0; j < 4; j++) deck.push(makeCard(uid++, JOKER_SUIT, 0));
+    }
     return shuffleCards(deck);
+  }
+
+  // Valor que vira curinga nas variações "2 é Curinga" e "Vira" (K → A).
+  function wildRankVal() {
+    if (state.variant === 'dois') return 2;
+    if (state.variant === 'vira' && state.viraCard) return (state.viraCard.val % 13) + 1;
+    return null;
+  }
+
+  function isWild(c) {
+    if (!c) return false;
+    if (c.suit === JOKER_SUIT) return true;
+    const wv = wildRankVal();
+    return wv !== null && c.val === wv;
+  }
+
+  // Pontos de penalidade da carta solta (curinga sobrando pesa mais).
+  function cardPts(c) {
+    return isWild(c) ? WILD_PTS : c.pts;
+  }
+
+  function suitColor(c) {
+    if (c.color === 'joker') return 'var(--joker-ink, #7c3aed)';
+    return c.color === 'red' ? 'var(--suit-red)' : 'var(--suit-black)';
+  }
+
+  function rankLabel(val) {
+    const r = RANKS.find(x => x.val === val);
+    return r ? r.label : '?';
   }
 
   function shuffleCards(arr) {
@@ -362,20 +414,83 @@
     return true;
   }
 
-  // Retorna 'TRINCA' | 'QUADRA' | 'SEQ' ou null.
-  function getMeldType(cards, allowLong = state.longMelds) {
+  const bySuitOrder = (a, b) => a.suitOrder - b.suitOrder;
+
+  // Jogo só com cartas "de verdade" (um curinga de valor pode valer como ele mesmo).
+  function naturalMeld(cards, allowLong) {
     const n = cards.length;
-    if (n < 3) return null;
+    if (cards.some(c => c.suit === JOKER_SUIT)) return null;
     if (cards.every(c => c.val === cards[0].val)) {
       if (n > 4 || (n === 4 && !allowLong)) return null;
-      return new Set(cards.map(c => c.suit)).size === n ? (n === 4 ? 'QUADRA' : 'TRINCA') : null;
+      if (new Set(cards.map(c => c.suit)).size !== n) return null;
+      return { type: n === 4 ? 'QUADRA' : 'TRINCA', ordered: cards.slice().sort(bySuitOrder), wildUid: null };
     }
     if (n > 3 && !allowLong) return null;
     if (!cards.every(c => c.suit === cards[0].suit)) return null;
     const vals = cards.map(c => c.val);
-    if (isConsecutive(vals)) return 'SEQ';
-    if (vals.includes(1) && isConsecutive(vals.map(v => (v === 1 ? 14 : v)))) return 'SEQ'; // Q-K-A
+    let aceHigh = false;
+    if (!isConsecutive(vals)) {
+      if (!(vals.includes(1) && isConsecutive(vals.map(v => (v === 1 ? 14 : v))))) return null; // Q-K-A
+      aceHigh = true;
+    }
+    const v = (c) => (aceHigh && c.val === 1 ? 14 : c.val);
+    return { type: 'SEQ', ordered: cards.slice().sort((a, b) => v(a) - v(b)), wildUid: null };
+  }
+
+  // Jogo com exatamente 1 curinga ocupando a carta que falta.
+  function meldWithWild(nat, wild, allowLong) {
+    const n = nat.length + 1;
+    if (n < 3 || nat.some(c => c.suit === JOKER_SUIT)) return null;
+
+    if (nat.every(c => c.val === nat[0].val)) {
+      const sizeOk = n === 3 || (n === 4 && allowLong);
+      if (sizeOk && new Set(nat.map(c => c.suit)).size === nat.length) {
+        return { type: n === 4 ? 'QUADRA' : 'TRINCA', ordered: [...nat.slice().sort(bySuitOrder), wild], wildUid: wild.uid };
+      }
+    }
+
+    if (n > 3 && !allowLong) return null;
+    if (!nat.every(c => c.suit === nat[0].suit)) return null;
+    for (const aceHigh of [false, true]) {
+      if (aceHigh && !nat.some(c => c.val === 1)) continue;
+      const v = (c) => (aceHigh && c.val === 1 ? 14 : c.val);
+      const sorted = nat.slice().sort((a, b) => v(a) - v(b));
+      let ok = true;
+      for (let i = 1; i < sorted.length; i++) if (v(sorted[i]) === v(sorted[i - 1])) ok = false;
+      if (!ok || v(sorted[sorted.length - 1]) - v(sorted[0]) > n - 1) continue;
+
+      // Curinga entra no buraco da sequência; sem buraco, vai na ponta.
+      const ordered = [];
+      let placed = false;
+      sorted.forEach((c, i) => {
+        if (i > 0 && v(c) - v(sorted[i - 1]) === 2) { ordered.push(wild); placed = true; }
+        ordered.push(c);
+      });
+      if (!placed) {
+        if (v(sorted[sorted.length - 1]) < 14) ordered.push(wild);
+        else ordered.unshift(wild);
+      }
+      return { type: 'SEQ', ordered, wildUid: wild.uid };
+    }
     return null;
+  }
+
+  // Retorna { type: 'TRINCA'|'QUADRA'|'SEQ', ordered, wildUid } ou null.
+  function getMeldInfo(cards, allowLong = state.longMelds) {
+    if (cards.length < 3) return null;
+    const natural = naturalMeld(cards, allowLong);
+    if (natural) return natural;
+    for (const w of cards) {
+      if (!isWild(w)) continue;
+      const info = meldWithWild(cards.filter(c => c !== w), w, allowLong);
+      if (info) return info;
+    }
+    return null;
+  }
+
+  function getMeldType(cards, allowLong = state.longMelds) {
+    const info = getMeldInfo(cards, allowLong);
+    return info ? info.type : null;
   }
 
   const meldCache = new Map();
@@ -389,7 +504,8 @@
   // Solver exato: maximiza cartas em jogos (desempate: mais pontos em jogos).
   function analyzeHandMelds(cards) {
     const n = cards.length;
-    const key = (state.longMelds ? 'L:' : 'C:') + cards.map(c => c.uid).sort((a, b) => a - b).join(',');
+    const key = (state.longMelds ? 'L' : 'C') + state.variant + (wildRankVal() || '') + ':' +
+      cards.map(c => c.uid).sort((a, b) => a - b).join(',');
     const hit = meldCache.get(key);
     if (hit) return hit;
 
@@ -408,7 +524,7 @@
           }
         }
         const type = getMeldType(sel);
-        if (type) byLowBit[low].push({ mask, type, size: pc, pts: sel.reduce((s, c) => s + c.pts, 0), cards: sel });
+        if (type) byLowBit[low].push({ mask, type, size: pc, pts: sel.reduce((s, c) => s + cardPts(c), 0), cards: sel });
       }
     }
 
@@ -438,13 +554,14 @@
     while (n > 0 && u !== full) {
       const r = best(u);
       if (r.pick) {
-        melds.push({ type: r.pick.type, cards: r.pick.cards, uids: r.pick.cards.map(c => c.uid) });
+        const info = getMeldInfo(r.pick.cards);
+        melds.push({ type: r.pick.type, cards: info ? info.ordered : r.pick.cards, wildUid: info ? info.wildUid : null, uids: r.pick.cards.map(c => c.uid) });
         covered += r.pick.size;
         coveredPts += r.pick.pts;
       }
       u = r.next;
     }
-    const totalPts = cards.reduce((s, c) => s + c.pts, 0);
+    const totalPts = cards.reduce((s, c) => s + cardPts(c), 0);
     const result = { melds, meldCount: melds.length, covered, loosePoints: totalPts - coveredPts };
 
     if (meldCache.size > 5000) meldCache.clear();
@@ -484,26 +601,23 @@
     state.stackedMelds.forEach(st => {
       if (st.uids.length < 3) return;
       if (st.uids.some(u => !handMap.has(u) || seenUids.has(u))) return;
-      const type = getMeldType(st.uids.map(u => handMap.get(u)));
-      if (type) {
+      const info = getMeldInfo(st.uids.map(u => handMap.get(u)));
+      if (info) {
         st.uids.forEach(u => seenUids.add(u));
-        validStacks.push({ stackId: st.stackId, type, uids: st.uids.slice() });
+        validStacks.push({ stackId: st.stackId, type: info.type, wildUid: info.wildUid, uids: st.uids.slice() });
       }
     });
 
     state.stackedMelds = validStacks;
   }
 
-  function orderCardsForStack(cards, type) {
-    const copy = cards.slice();
-    if (type !== 'SEQ') return copy.sort((a, b) => a.suitOrder - b.suitOrder);
-    const aceHigh = copy.some(c => c.val === 1) && !isConsecutive(copy.map(c => c.val));
-    const v = (c) => (aceHigh && c.val === 1 ? 14 : c.val);
-    return copy.sort((a, b) => v(a) - v(b));
+  function orderCardsForStack(cards) {
+    const info = getMeldInfo(cards);
+    return info ? info.ordered : cards.slice();
   }
 
   function pushStack(cards, type) {
-    const orderedUids = orderCardsForStack(cards, type).map(c => c.uid);
+    const orderedUids = orderCardsForStack(cards).map(c => c.uid);
     state.stackedMelds.push({ stackId: 'st_' + randId(6), type, uids: orderedUids });
     return orderedUids;
   }
@@ -647,8 +761,12 @@
     if (!firstHand) state.handNumber++;
 
     state.inMatch = true;
-    state.stock = buildDoubleDeck104();
+    state.stock = buildDeck();
     state.discardPile = [];
+    // Variação "Vira": antes de dar as cartas, vira-se uma carta que fica fora
+    // do jogo; o valor seguinte a ela (K → A) é o curinga desta mão.
+    state.viraCard = state.variant === 'vira' ? state.stock.pop() : null;
+    meldCache.clear();
     state.selectedCardUid = null;
     state.lastDrawnUid = null;
     state.lockedDiscardUid = null;
@@ -808,6 +926,8 @@
 
   function evaluateCardUsefulness(hand, candidateCard) {
     const before = analyzeHandMelds(hand).covered;
+    // Curinga é sempre valioso: o bot nunca joga fora e sempre pega da lixeira.
+    if (isWild(candidateCard)) return 120;
     const withCard = analyzeHandMelds([...hand, candidateCard]).covered;
     if (withCard > before) return 100;
 
@@ -924,7 +1044,7 @@
       winnerId: winner.id,
       winnerName: winner.name,
       winnerTeam: winner.team,
-      melds: winningMelds.map(m => ({ type: m.type, cards: m.cards.map(c => ({ uid: c.uid, suit: c.suit, val: c.val })) })),
+      melds: winningMelds.map(m => ({ type: m.type, cards: m.cards.map(c => ({ uid: c.uid, suit: c.suit, val: c.val, w: c.uid === m.wildUid })) })),
       rows: state.players.map(p => ({ id: p.id, name: p.name, team: p.team, last: p.lastHandPenalty, total: p.penaltyScore })),
       matchOver,
       championIds,
@@ -959,14 +1079,16 @@
 
   function cardText(c) {
     const card = sanitizeCard(c);
-    return card ? `${card.label}${card.sym}` : '?';
+    if (!card) return '?';
+    if (card.suit === JOKER_SUIT) return '🃏';
+    return `${card.label}${card.sym}${c.w ? '★' : ''}`;
   }
 
   function showRoundEndModal(re, localWon) {
     $('round-end-emoji').textContent = localWon ? '🏆' : '🃏';
     $('round-end-sub').textContent = re.matchOver
       ? 'Fim da Partida!'
-      : `Fim da Mão ${re.handNumber}${state.scoringMode === 'points' ? ' • Limite 100 pts' : ''}`;
+      : `Fim da Mão ${re.handNumber}${state.scoringMode === 'points' ? ' • Limite 100 pts' : ''}${state.variant !== 'classico' ? ` • ${VARIANTS[state.variant].short}` : ''}`;
     $('round-end-title').textContent = re.gameMode === 'solo'
       ? `${re.winnerName} Bateu!`
       : `Equipe ${re.winnerTeam} Bateu (${re.winnerName})!`;
@@ -1022,7 +1144,13 @@
   }
 
   function cardFaceHTML(c) {
-    const col = c.color === 'red' ? 'var(--suit-red)' : 'var(--suit-black)';
+    const col = suitColor(c);
+    if (c.suit === JOKER_SUIT) {
+      return `
+      <div class="card-corner" style="color:${col};"><span>JK</span><span>★</span></div>
+      <div class="card-center" style="color:${col};">🃏</div>
+    `;
+    }
     return `
       <div class="card-corner" style="color:${col};"><span>${c.label}</span><span>${c.sym}</span></div>
       <div class="card-center" style="color:${col};">${c.sym}</div>
@@ -1032,7 +1160,7 @@
   function renderGameUI() {
     $('game-round-badge').textContent = `Mão ${state.handNumber}`;
     const modeLabel = state.gameMode === 'duo' ? 'Dupla 2v2' : (state.gameMode === 'team' ? 'Equipe 3v3' : `Solo ${state.players.length}P`);
-    $('game-mode-badge').textContent = modeLabel;
+    $('game-mode-badge').textContent = state.variant !== 'classico' ? `${modeLabel} · ${VARIANTS[state.variant].short}` : modeLabel;
 
     const curr = getCurrentPlayer();
     const me = getLocalPlayer();
@@ -1097,8 +1225,9 @@
     discardBox.classList.toggle('pile-highlight', drawPhase && state.discardPile.length > 0);
 
     const topDiscard = state.discardPile[state.discardPile.length - 1];
+    discardBox.classList.toggle('wild-face', !!topDiscard && isWild(topDiscard));
     if (topDiscard) {
-      const col = topDiscard.color === 'red' ? 'var(--suit-red)' : 'var(--suit-black)';
+      const col = suitColor(topDiscard);
       discardBox.innerHTML = `
         <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; font-weight:900; color:${col};">
           <span>${topDiscard.label}</span><span>${topDiscard.sym}</span>
@@ -1113,6 +1242,7 @@
     }
 
     renderScorePill();
+    renderWildInfo();
 
     if (!me || !me.hand) return;
 
@@ -1144,10 +1274,10 @@
       const mid = (n - 1) / 2;
       const leaves = st.uids.map((u, i) => {
         const c = handMap.get(u);
-        const col = c.color === 'red' ? 'var(--suit-red)' : 'var(--suit-black)';
+        const col = suitColor(c);
         const rot = n > 1 ? ((i - mid) / mid) * 3 : 0;
         return `
-          <div class="stacked-leaf-card" style="left:calc(2px + ${i} * var(--card-w) * 0.46); z-index:${i + 2}; transform:rotate(${rot.toFixed(1)}deg);">
+          <div class="stacked-leaf-card${isWild(c) ? ' wild-card' : ''}" style="left:calc(2px + ${i} * var(--card-w) * 0.46); z-index:${i + 2}; transform:rotate(${rot.toFixed(1)}deg);">
             <div style="display:flex; flex-direction:column; align-items:flex-start; font-size:var(--card-font); font-weight:900; color:${col}; line-height:1.05;">
               <span>${c.label}</span>
               <span>${c.sym}</span>
@@ -1160,7 +1290,7 @@
       return `
         <div class="meld-stack-group" data-unstack-id="${escapeHTML(st.stackId)}" title="Toque para abrir este jogo"
              style="width:calc(var(--card-w) + ${n - 1} * var(--card-w) * 0.46 + 6px);">
-          <span class="meld-stack-badge">${escapeHTML(st.type)}</span>
+          <span class="meld-stack-badge">${escapeHTML(st.type)}${st.wildUid ? ' ★' : ''}</span>
           ${leaves}
         </div>
       `;
@@ -1172,9 +1302,11 @@
         'pife-card-unit',
         state.selectedCardUid === c.uid ? 'selected-card' : '',
         state.lastDrawnUid === c.uid ? 'new-card' : '',
-        myTurn && state.lockedDiscardUid === c.uid ? 'locked-card' : ''
+        myTurn && state.lockedDiscardUid === c.uid ? 'locked-card' : '',
+        isWild(c) ? 'wild-card' : ''
       ].join(' ');
-      return `<div class="${cls}" data-card-uid="${c.uid}" role="button" tabindex="0" aria-label="${c.label} de ${c.sym}">${cardFaceHTML(c)}</div>`;
+      const aria = c.suit === JOKER_SUIT ? 'Coringa' : `${c.label} de ${c.sym}${isWild(c) ? ' (curinga)' : ''}`;
+      return `<div class="${cls}" data-card-uid="${c.uid}" role="button" tabindex="0" aria-label="${aria}">${cardFaceHTML(c)}</div>`;
     }).join('');
 
     if (handGestureActive) handRenderPending = true;
@@ -1211,6 +1343,32 @@
       const total = (t) => state.players.filter(p => p.team === t).reduce((s, p) => s + p.penaltyScore, 0);
       pill.textContent = `📊 A ${total('A')} × B ${total('B')} • Limite 100`;
     }
+  }
+
+  // Carta da vira + lembrete de qual é o curinga da mão.
+  function renderWildInfo() {
+    const pill = $('wild-pill');
+    const viraSlot = $('pile-vira');
+    const vira = state.variant === 'vira' ? state.viraCard : null;
+    viraSlot.classList.toggle('hidden', !vira);
+    if (vira) {
+      const col = suitColor(vira);
+      $('vira-card-box').innerHTML = `
+        <div style="width:100%; display:flex; justify-content:space-between; font-size:13px; font-weight:900; color:${col};">
+          <span>${vira.label}</span><span>${vira.sym}</span>
+        </div>
+        <div style="font-size:26px; color:${col}; line-height:1;">${vira.sym}</div>
+        <div style="font-size:9.5px; font-weight:900; color:var(--text-muted); text-align:center;">fora do jogo</div>
+      `;
+      $('vira-pile-lbl').textContent = `VIRA → ★ ${rankLabel(wildRankVal())}`;
+    }
+
+    let txt = '';
+    if (state.variant === 'coringa') txt = '🃏 4 coringas ★ no baralho • 1 por jogo';
+    else if (state.variant === 'dois') txt = '★ Curinga: todo 2 • 1 por jogo';
+    else if (vira) txt = `★ Curinga desta mão: todo ${rankLabel(wildRankVal())} • 1 por jogo`;
+    pill.classList.toggle('hidden', !txt);
+    pill.textContent = txt;
   }
 
   /* -------------------------------------------------------------------------
@@ -1765,6 +1923,8 @@
       gameMode: state.gameMode,
       scoringMode: state.scoringMode,
       longMelds: state.longMelds,
+      variant: state.variant,
+      viraCard: state.viraCard,
       handNumber: state.handNumber,
       stockCount: state.stock.length,
       discardTop: state.discardPile.slice(-2),
@@ -1999,7 +2159,7 @@
       winnerTeam: re.winnerTeam === 'A' || re.winnerTeam === 'B' ? re.winnerTeam : null,
       melds: Array.isArray(re.melds) ? re.melds.slice(0, 5).map(m => ({
         type: ['TRINCA', 'QUADRA', 'SEQ'].includes(m && m.type) ? m.type : '?',
-        cards: Array.isArray(m && m.cards) ? m.cards.slice(0, 13) : []
+        cards: Array.isArray(m && m.cards) ? m.cards.slice(0, 13).map(c => ({ ...sanitizeCard(c), w: !!(c && c.w) })).filter(c => Number.isInteger(c.uid)) : []
       })) : [],
       rows: Array.isArray(re.rows) ? re.rows.slice(0, 8).map(r => ({
         id: String((r && r.id) || ''),
@@ -2064,13 +2224,18 @@
     players.forEach(p => { if (p.id !== state.localId) p.hand = null; });
 
     const longMelds = !!msg.longMelds;
-    if (longMelds !== state.longMelds) meldCache.clear();
+    const variant = Object.prototype.hasOwnProperty.call(VARIANTS, msg.variant) ? msg.variant : 'classico';
+    const viraCard = variant === 'vira' ? sanitizeCard(msg.viraCard) : null;
+    if (longMelds !== state.longMelds || variant !== state.variant ||
+        (viraCard && viraCard.uid) !== (state.viraCard && state.viraCard.uid)) meldCache.clear();
 
     state.matchId = msg.matchId;
     state.lastSyncSeq = msg.seq;
     state.gameMode = ['solo', 'duo', 'team'].includes(msg.gameMode) ? msg.gameMode : 'solo';
     state.scoringMode = msg.scoringMode === 'single' ? 'single' : 'points';
     state.longMelds = longMelds;
+    state.variant = variant;
+    state.viraCard = viraCard;
     state.handNumber = handNumber;
     state.remoteStockCount = Number(msg.stockCount) || 0;
     state.discardPile = Array.isArray(msg.discardTop) ? msg.discardTop.map(sanitizeCard).filter(Boolean) : [];
@@ -2322,7 +2487,7 @@
       : (state.gameMode === 'team' ? '🛡️ Em Equipe (3v3)' : `👤 Solo (${state.soloCount}P)`);
     const ruleTxt = state.scoringMode === 'single' ? 'Batida Única' : 'Estouro 100 pts';
     const diffTxt = state.botDiff === 'easy' ? 'Fácil' : (state.botDiff === 'hard' ? 'Mestre' : 'Médio');
-    $('lobby-match-summary').textContent = `${modeTxt} · ${ruleTxt} · Bots ${diffTxt}${state.longMelds ? ' · Jogos longos' : ''}`;
+    $('lobby-match-summary').textContent = `${modeTxt} · ${VARIANTS[state.variant].label} · ${ruleTxt} · Bots ${diffTxt}${state.longMelds ? ' · Jogos longos' : ''}`;
 
     $('solo-count-box').classList.toggle('hidden', state.gameMode !== 'solo');
 
@@ -2333,6 +2498,7 @@
     mark('[data-count]', b => Number(b.dataset.count) === state.soloCount);
     mark('[data-scoring]', b => b.dataset.scoring === state.scoringMode);
     mark('[data-diff]', b => b.dataset.diff === state.botDiff);
+    mark('[data-variant]', b => b.dataset.variant === state.variant);
 
     const autoBtn = $('btn-toggle-autostack');
     autoBtn.textContent = state.autoStackMelds ? 'ATIVO' : 'MANUAL';
@@ -2425,6 +2591,14 @@
     if (btn.dataset.count) { sfx.init(); state.soloCount = Number(btn.dataset.count); refreshMatchSettingsUI(); return; }
     if (btn.dataset.scoring) { sfx.init(); state.scoringMode = btn.dataset.scoring; refreshMatchSettingsUI(); return; }
     if (btn.dataset.diff) { sfx.init(); state.botDiff = btn.dataset.diff; refreshMatchSettingsUI(); return; }
+    if (btn.dataset.variant && VARIANTS[btn.dataset.variant]) {
+      sfx.init();
+      state.variant = btn.dataset.variant;
+      meldCache.clear();
+      refreshMatchSettingsUI();
+      showToast(VARIANTS[state.variant].toast);
+      return;
+    }
     if (btn.dataset.setTheme) {
       sfx.init();
       applyTheme(btn.dataset.setTheme);
