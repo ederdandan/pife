@@ -86,6 +86,11 @@
     slideCard() { this.tone(460, 'triangle', 0.04, 0.045, 560); }
     stackMeld() { this.tone(587.33, 'sine', 0.11, 0.07, 880); }
     errorBuzz() { this.tone(180, 'square', 0.09, 0.035, 140); }
+    yourTurn() {
+      this.tone(660, 'sine', 0.09, 0.06, 880);
+      setTimeout(() => this.tone(880, 'sine', 0.12, 0.06), 110);
+      if (this.enabled && navigator.vibrate) try { navigator.vibrate(30); } catch (_) {}
+    }
     batidaWin() {
       [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
         setTimeout(() => this.tone(f, 'triangle', 0.18, 0.09), i * 85);
@@ -94,6 +99,8 @@
     }
   }
   const sfx = new CardSoundFX();
+  const MUTE_KEY = 'pife_varanda_muted';
+  try { sfx.enabled = localStorage.getItem(MUTE_KEY) !== '1'; } catch (_) {}
 
   /* -------------------------------------------------------------------------
      3. PERFIL LOCAL, TEMAS & PERSISTÊNCIA
@@ -291,11 +298,29 @@
     lastSyncSeq: 0,
     shownRoundKey: null,
     recordedRoundKeys: new Set(),
-    spectatorToastFor: null
+    spectatorToastFor: null,
+    pendingMoveUntil: 0, // convidado: jogada enviada, aguardando o dono confirmar
+    turnAlertKey: false // estava na fase de compra da minha vez no último render
   };
 
   let botTimeout = null;
   let syncSeq = 0;
+  // Enquanto o dedo está numa carta, não recria a mão (senão o arraste "some"
+  // quando um bot joga no meio do gesto).
+  let handGestureActive = false;
+  let handRenderPending = false;
+  let exitConfirmUntil = 0;
+
+  // Convidado que já enviou a jogada não pode mandar outra até o dono responder.
+  function movePending() {
+    return !state.isHost && Date.now() < state.pendingMoveUntil;
+  }
+
+  function markMovePending() {
+    state.pendingMoveUntil = Date.now() + 4000;
+    // Se o dono não responder, destrava a tela sozinho.
+    setTimeout(() => { if (state.inMatch && !movePending()) renderGameUI(); }, 4100);
+  }
 
   const LOCK_MSG = '🔒 A carta que você pegou da lixeira não pode ser descartada nesta vez.';
 
@@ -1011,7 +1036,13 @@
 
     const curr = getCurrentPlayer();
     const me = getLocalPlayer();
-    const myTurn = isMyTurn();
+    const pending = movePending();
+    const myTurn = isMyTurn() && !pending;
+
+    // Aviso sonoro/vibração quando chega a sua vez (uma vez por turno).
+    const myDrawTurn = myTurn && state.turnStep === 'draw';
+    if (myDrawTurn && !state.turnAlertKey) sfx.yourTurn();
+    state.turnAlertKey = myDrawTurn;
 
     // Assentos dos demais jogadores
     const others = state.players.filter(p => p.id !== state.localId);
@@ -1040,15 +1071,18 @@
 
     // Status do turno
     const statusPill = $('turn-status-pill');
+    statusPill.classList.toggle('turn-pill-mine', myTurn && state.turnStep !== 'ended');
     if (state.turnStep === 'ended') {
       statusPill.textContent = '🏁 Mão encerrada.';
+    } else if (pending && isMyTurn()) {
+      statusPill.textContent = '⏳ Enviando sua jogada…';
     } else if (myTurn) {
       if (state.turnStep === 'draw') {
-        statusPill.textContent = '👆 Sua vez! Toque no MONTE ou na LIXEIRA para comprar.';
+        statusPill.textContent = '👆 SUA VEZ! Passo 1: toque no MONTE ou na LIXEIRA para comprar.';
       } else {
         statusPill.textContent = state.lockedDiscardUid !== null
-          ? '👇 Descarte uma carta (a 🔒 da lixeira não pode voltar).'
-          : '👇 Arraste uma carta para CIMA ou toque 2x nela para descartar.';
+          ? '👇 Passo 2: descarte uma carta (a 🔒 da lixeira não pode voltar).'
+          : '👇 Passo 2: toque 2x numa carta (ou arraste para cima) para descartar.';
       }
     } else if (curr) {
       statusPill.textContent = `⏳ Vez de ${curr.name} (${state.turnStep === 'draw' ? 'comprando' : 'descartando'})...`;
@@ -1143,7 +1177,8 @@
       return `<div class="${cls}" data-card-uid="${c.uid}" role="button" tabindex="0" aria-label="${c.label} de ${c.sym}">${cardFaceHTML(c)}</div>`;
     }).join('');
 
-    board.innerHTML = stacksHTML + freeHTML;
+    if (handGestureActive) handRenderPending = true;
+    else board.innerHTML = stacksHTML + freeHTML;
 
     const selFreeIdx = freeCards.findIndex(c => c.uid === state.selectedCardUid);
     $('btn-move-left').disabled = selFreeIdx <= 0;
@@ -1189,7 +1224,7 @@
   }
 
   function performLocalDraw(source) {
-    if (!state.inMatch) return;
+    if (!state.inMatch || movePending()) return;
     if (!isMyTurn()) { notYourTurnFeedback(); return; }
     if (state.turnStep !== 'draw') {
       showToast('Você já comprou. Agora descarte uma carta.');
@@ -1199,12 +1234,17 @@
       showToast('A lixeira está vazia — compre do MONTE.');
       return;
     }
-    if (state.isHost) drawCardAction(state.localId, source);
-    else sendRoomPacket({ type: 'CLIENT_MOVE', move: 'draw', source });
+    if (state.isHost) {
+      drawCardAction(state.localId, source);
+    } else {
+      markMovePending();
+      sendRoomPacket({ type: 'CLIENT_MOVE', move: 'draw', source });
+      renderGameUI();
+    }
   }
 
   function performLocalDiscard(uid) {
-    if (uid === null || uid === undefined) return;
+    if (uid === null || uid === undefined || movePending()) return;
     if (!isMyTurn()) { notYourTurnFeedback(); renderGameUI(); return; }
     if (state.turnStep !== 'discard') {
       showToast('Primeiro compre uma carta do MONTE ou da LIXEIRA.');
@@ -1231,6 +1271,7 @@
         sfx.discardCard();
         if (isWin) sfx.stackMeld();
       }
+      markMovePending();
       sendRoomPacket({ type: 'CLIENT_MOVE', move: 'discard', cardUid: uid });
       renderGameUI();
     }
@@ -1238,7 +1279,7 @@
 
   // Toque na lixeira durante o descarte pede confirmação (evita descarte acidental).
   function onDiscardPileTap() {
-    if (!state.inMatch) return;
+    if (!state.inMatch || movePending()) return;
     if (!isMyTurn()) { notYourTurnFeedback(); return; }
     if (state.turnStep === 'draw') { performLocalDraw('discard'); return; }
     if (state.turnStep !== 'discard') return;
@@ -1301,10 +1342,12 @@
       isDragging = false;
       isDraggingUpToDiscard = false;
       currentDropUid = null;
+      handGestureActive = false;
     }
 
     board.addEventListener('pointerdown', (e) => {
       if (pointerId !== null) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return; // ignora botão direito/meio
 
       const stackEl = e.target.closest('.meld-stack-group');
       const cardEl = stackEl ? null : e.target.closest('.pife-card-unit');
@@ -1319,6 +1362,8 @@
       isDragging = false;
       isDraggingUpToDiscard = false;
       currentDropUid = null;
+      handGestureActive = true;
+      handRenderPending = false;
 
       try { board.setPointerCapture(pointerId); } catch (_) {}
     });
@@ -1399,15 +1444,18 @@
       const wasDragging = isDragging;
       const shouldDiscard = isDraggingUpToDiscard;
       const dropTargetUid = currentDropUid;
+      const needsRender = handRenderPending;
 
       resetDragVisuals();
+      handRenderPending = false;
 
       // Montinho: abre só com toque (sem arraste), evitando aberturas acidentais.
       if (stackId) {
         if (!wasDragging) unstackMeldById(stackId);
+        else if (needsRender) renderGameUI();
         return;
       }
-      if (releasedUid === null) return;
+      if (releasedUid === null) { if (needsRender) renderGameUI(); return; }
 
       if (wasDragging) {
         if (shouldDiscard) performLocalDiscard(releasedUid);
@@ -1435,6 +1483,9 @@
       state.lastTap = { uid: null, time: 0 };
       performLocalDiscard(uid);
       return;
+    }
+    if (isDoubleTap && isMyTurn() && state.turnStep === 'draw') {
+      showToast('👆 Primeiro compre: toque no MONTE ou na LIXEIRA.');
     }
     state.lastTap = { uid, time: now };
     state.selectedCardUid = uid;
@@ -1907,7 +1958,7 @@
       case 'CLIENT_MOVE': {
         if (!state.isHost) return;
         if (msg.move === 'draw' && (msg.source === 'stock' || msg.source === 'discard')) {
-          drawCardAction(msg.senderId, msg.source);
+          if (!drawCardAction(msg.senderId, msg.source)) syncMatchToPeers(); // destrava o convidado
         } else if (msg.move === 'discard' && Number.isInteger(msg.cardUid)) {
           if (!discardCardAction(msg.senderId, msg.cardUid)) syncMatchToPeers(); // desfaz remoção otimista do convidado
         } else if (msg.move === 'leave') {
@@ -1993,6 +2044,7 @@
       return;
     }
     if (state.ignoreMatchId && msg.matchId === state.ignoreMatchId) return;
+    state.pendingMoveUntil = 0; // o dono respondeu: libera a próxima jogada
 
     const players = Array.isArray(msg.players) ? msg.players.slice(0, 8).map(sanitizeRemotePlayer).filter(Boolean) : [];
     const meRemote = players.find(p => p.id === state.localId);
@@ -2161,6 +2213,7 @@
     closeProfileModal();
     if (state.inMatch) renderGameUI();
     showToast(firstRun ? `☕ Bem-vindo, ${profile.name}! Escolha a mesa e dê as cartas.` : '✅ Perfil salvo!');
+    if (firstRun) $('modal-rules').classList.remove('hidden');
   }
 
   function stopCamera() {
@@ -2257,9 +2310,9 @@
     $('profile-preview-name').textContent = profile.name;
     $('lobby-wins-badge').textContent = `🏆 ${profile.wins} batida${profile.wins === 1 ? '' : 's'}`;
     $('profile-stats-row').innerHTML = `
-      <span>🏆 ${profile.wins} batidas</span>
-      <span>🥇 ${profile.matchesWon} partidas vencidas</span>
-      <span>🃏 ${profile.games} mãos</span>
+      <span>🏆 ${profile.wins} batida${profile.wins === 1 ? '' : 's'}</span>
+      <span>🥇 ${profile.matchesWon} partida${profile.matchesWon === 1 ? '' : 's'} vencida${profile.matchesWon === 1 ? '' : 's'}</span>
+      <span>🃏 ${profile.games} mão${profile.games === 1 ? '' : 's'}</span>
     `;
   }
 
@@ -2288,6 +2341,17 @@
     const longBtn = $('btn-toggle-longmelds');
     longBtn.textContent = state.longMelds ? 'LONGOS' : 'CLÁSSICO';
     longBtn.style.opacity = state.longMelds ? '1' : '0.68';
+  }
+
+  function refreshMuteUI() {
+    const icon = sfx.enabled ? '🔊' : '🔇';
+    const label = sfx.enabled ? 'Desligar som' : 'Ligar som';
+    ['btn-mute', 'btn-game-mute'].forEach(id => {
+      const b = $(id);
+      b.textContent = icon;
+      b.setAttribute('aria-label', label);
+      b.title = label;
+    });
   }
 
   let toastTimer = null;
@@ -2390,9 +2454,9 @@
       case 'btn-mute':
       case 'btn-game-mute': {
         sfx.enabled = !sfx.enabled;
-        const icon = sfx.enabled ? '🔊' : '🔇';
-        $('btn-mute').textContent = icon;
-        $('btn-game-mute').textContent = icon;
+        try { localStorage.setItem(MUTE_KEY, sfx.enabled ? '0' : '1'); } catch (_) {}
+        refreshMuteUI();
+        showToast(sfx.enabled ? '🔊 Som ligado' : '🔇 Som desligado');
         break;
       }
       case 'btn-help':
@@ -2501,9 +2565,10 @@
         if (me && me.hand) {
           const before = state.stackedMelds.length;
           autoGroupValidMelds(me.hand, false);
-          showToast(state.stackedMelds.length === before
+          const added = state.stackedMelds.length - before;
+          showToast(added <= 0
             ? 'Nenhum jogo novo pronto encontrado.'
-            : `📚 ${state.stackedMelds.length} jogo(s) empilhado(s)!`);
+            : `📚 ${added} jogo${added > 1 ? 's' : ''} empilhado${added > 1 ? 's' : ''}!`);
           renderGameUI();
         }
         break;
@@ -2541,7 +2606,17 @@
         if (btn.dataset.restart === '1') startMatch();
         else dealNewHand(false);
         break;
-      case 'btn-game-exit':
+      case 'btn-game-exit': {
+        const midHand = state.inMatch && state.turnStep !== 'ended';
+        if (midHand && Date.now() > exitConfirmUntil) {
+          exitConfirmUntil = Date.now() + 3000;
+          showToast('Sair da partida? Toque no ✕ de novo para confirmar.');
+          break;
+        }
+        exitConfirmUntil = 0;
+        leaveMatchToLobby();
+        break;
+      }
       case 'btn-end-lobby':
         leaveMatchToLobby();
         break;
@@ -2560,6 +2635,7 @@
      ------------------------------------------------------------------------- */
   setupHandPointerInteractions();
   setupKeyboard();
+  refreshMuteUI();
   applyTheme(profile.theme);
   buildAvatarPicker();
   refreshProfileUI();

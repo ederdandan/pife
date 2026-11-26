@@ -347,6 +347,41 @@
       backdrop-filter: blur(6px);
     }
 
+    /* Botões de ícone do topo: alvo de toque confortável (mín. 40px) */
+    button.header-chip {
+      min-width: 40px;
+      min-height: 40px;
+      font-size: 16px !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+      flex-shrink: 0;
+    }
+
+    /* Status do turno: destaque forte quando é a vez do jogador */
+    .turn-status-pill {
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+      max-width: 100%;
+      line-height: 1.3;
+      transition: background 0.2s ease;
+    }
+    .turn-status-pill.turn-pill-mine {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #ffffff;
+      border-color: #bbf7d0;
+      animation: pulseBatida 1.4s infinite ease-in-out;
+    }
+
     /* =========================================================================
        3. TELA 1: LOBBY EM 3 ABAS (MESA, TEMAS & PERFIL, SALA ONLINE)
        ========================================================================= */
@@ -414,9 +449,10 @@
     }
 
     .nav-tab-btn {
-      padding: 8px 4px;
+      padding: 10px 4px;
+      min-height: 42px;
       border-radius: calc(var(--radius-btn) - 4px);
-      font-size: 11.5px;
+      font-size: 12.5px;
       font-weight: 900;
     }
 
@@ -433,7 +469,7 @@
     .tab-scroll::-webkit-scrollbar-thumb { background: rgba(120, 90, 60, 0.35); border-radius: 999px; }
 
     .lbl-micro {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -447,7 +483,8 @@
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
     .choice-btn {
-      padding: 8px 6px;
+      padding: 9px 6px;
+      min-height: 44px;
       text-align: center;
       transition: transform 0.08s ease, border-color 0.12s ease;
     }
@@ -657,7 +694,7 @@
       box-shadow: -4px 0 0 0 var(--accent-gold), 0 6px 14px rgba(0, 0, 0, 0.25);
     }
 
-    .card-corner { display: flex; justify-content: space-between; font-size: var(--card-font); font-weight: 900; line-height: 1; }
+    .card-corner { display: flex; justify-content: space-between; font-size: calc(var(--card-font) + 1px); font-weight: 900; line-height: 1; }
     .card-center { font-size: var(--card-sym); text-align: center; line-height: 1; }
 
     /* Carta recém-comprada */
@@ -757,9 +794,10 @@
     }
 
     .mini-tool-btn {
-      padding: 5px 9px;
-      border-radius: 8px;
-      font-size: 10.5px;
+      padding: 8px 12px;
+      min-height: 38px;
+      border-radius: 9px;
+      font-size: 12px;
       font-weight: 900;
       background: var(--panel-bg);
       border: 1px solid rgba(120, 90, 60, 0.32);
@@ -820,15 +858,16 @@
       top: 54px;
       left: 50%;
       z-index: 60;
-      max-width: calc(100vw - 24px);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 7px 15px;
-      border-radius: 999px;
-      font-size: 11.5px;
+      width: max-content;
+      max-width: min(calc(100vw - 24px), 440px);
+      padding: 9px 16px;
+      border-radius: 16px;
+      font-size: 13px;
       font-weight: 900;
-      white-space: nowrap;
-      animation: toastSlide 2.6s ease forwards;
+      line-height: 1.35;
+      text-align: center;
+      white-space: normal;
+      animation: toastSlide 3.2s ease forwards;
       pointer-events: none;
     }
 
@@ -958,19 +997,17 @@
       <div id="lobby-screen" style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
         <header class="shell-width top-bar">
           <div style="display:flex; align-items:center; gap:9px;">
-            <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#f8fafc,#dbeafe); border:2px solid #1e40af; color:#1e3a8a; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; box-shadow:0 4px 12px rgba(0,0,0,0.28);">
-              ♠️
-            </div>
+            <img src="icons/icon.svg" alt="" class="brand-logo" width="42" height="42" />
             <div>
-              <h1 class="font-serif-title" style="margin:0; font-size:16px; color:var(--header-txt); line-height:1.1;">Pife de Varanda</h1>
-              <span style="font-size:10px; color:var(--header-txt); opacity:0.86;">Arraste para Organizar ou Descartar • Solo, 2v2, 3v3 &amp; Salas</span>
+              <h1 class="font-serif-title" style="margin:0; font-size:18px; color:var(--header-txt); line-height:1.1;">Pife de Varanda</h1>
+              <span style="font-size:11px; color:var(--header-txt); opacity:0.9;">Jogo de cartas brasileiro</span>
             </div>
           </div>
 
           <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" id="btn-cycle-theme" class="header-chip" style="padding:7px 10px; font-size:12px; font-weight:900;" title="Trocar Tema">🎨</button>
-            <button type="button" id="btn-mute" class="header-chip" style="padding:7px 10px; font-size:13px; font-weight:900;" title="Som">🔊</button>
-            <button type="button" id="btn-help" class="header-chip" style="padding:7px 10px; font-size:12px; font-weight:900;" title="Regras do Pife">?</button>
+            <button type="button" id="btn-cycle-theme" class="header-chip" style="padding:7px 10px; font-size:12px; font-weight:900;" title="Trocar Tema" aria-label="Trocar tema">🎨</button>
+            <button type="button" id="btn-mute" class="header-chip" style="padding:7px 10px; font-size:13px; font-weight:900;" title="Som" aria-label="Som">🔊</button>
+            <button type="button" id="btn-help" class="header-chip" style="padding:7px 12px; font-size:12px; font-weight:900;" title="Como jogar" aria-label="Como jogar">❓</button>
           </div>
         </header>
 
@@ -996,9 +1033,9 @@
 
           <!-- 3 Abas Limpas -->
           <nav class="soft-box nav-tabs" role="tablist">
-            <button type="button" data-tab="play" class="nav-tab-btn">🃏 Mesa</button>
-            <button type="button" data-tab="profile" class="nav-tab-btn">🎨 Temas &amp; Perfil</button>
-            <button type="button" data-tab="room" class="nav-tab-btn">🌐 Sala Online</button>
+            <button type="button" role="tab" data-tab="play" class="nav-tab-btn">🃏 Mesa</button>
+            <button type="button" role="tab" data-tab="profile" class="nav-tab-btn">🎨 Temas &amp; Perfil</button>
+            <button type="button" role="tab" data-tab="room" class="nav-tab-btn">🌐 Sala Online</button>
           </nav>
 
           <div class="tab-scroll">
@@ -1011,17 +1048,17 @@
                   <button type="button" data-mode="solo" class="soft-box choice-btn">
                     <div style="font-size:16px;">👤</div>
                     <div style="font-size:11px; font-weight:900; margin-top:2px;">Solo</div>
-                    <div style="font-size:9px; color:var(--text-muted);">Individual</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">Individual</div>
                   </button>
                   <button type="button" data-mode="duo" class="soft-box choice-btn">
                     <div style="font-size:16px;">🤝</div>
                     <div style="font-size:11px; font-weight:900; margin-top:2px;">Em Dupla</div>
-                    <div style="font-size:9px; color:var(--text-muted);">2 vs 2 (4P)</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">2 vs 2 (4P)</div>
                   </button>
                   <button type="button" data-mode="team" class="soft-box choice-btn">
                     <div style="font-size:16px;">🛡️</div>
                     <div style="font-size:11px; font-weight:900; margin-top:2px;">Em Equipe</div>
-                    <div style="font-size:9px; color:var(--text-muted);">3 vs 3 (6P)</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">3 vs 3 (6P)</div>
                   </button>
                 </div>
               </div>
@@ -1029,9 +1066,9 @@
               <div id="solo-count-box">
                 <span class="lbl-micro">Jogadores na Mesa Solo (Completa com Bots)</span>
                 <div class="grid-3">
-                  <button type="button" data-count="2" class="soft-box choice-btn"><strong style="font-size:11.5px;">2 Jogadores</strong></button>
-                  <button type="button" data-count="3" class="soft-box choice-btn"><strong style="font-size:11.5px;">3 Jogadores</strong></button>
-                  <button type="button" data-count="4" class="soft-box choice-btn"><strong style="font-size:11.5px;">4 Jogadores</strong></button>
+                  <button type="button" data-count="2" class="soft-box choice-btn"><strong style="font-size:12.5px;">2 Jogadores</strong></button>
+                  <button type="button" data-count="3" class="soft-box choice-btn"><strong style="font-size:12.5px;">3 Jogadores</strong></button>
+                  <button type="button" data-count="4" class="soft-box choice-btn"><strong style="font-size:12.5px;">4 Jogadores</strong></button>
                 </div>
               </div>
 
@@ -1039,16 +1076,16 @@
                 <div>
                   <span class="lbl-micro">Regra de Vitória</span>
                   <div class="grid-2">
-                    <button type="button" data-scoring="single" class="soft-box choice-btn"><strong style="font-size:10px;">Batida Única</strong></button>
-                    <button type="button" data-scoring="points" class="soft-box choice-btn"><strong style="font-size:10px;">Estouro 100p</strong></button>
+                    <button type="button" data-scoring="single" class="soft-box choice-btn"><strong style="font-size:11.5px;">Batida Única</strong></button>
+                    <button type="button" data-scoring="points" class="soft-box choice-btn"><strong style="font-size:11.5px;">Estouro 100p</strong></button>
                   </div>
                 </div>
                 <div>
                   <span class="lbl-micro">Nível dos Bots</span>
                   <div class="grid-3">
-                    <button type="button" data-diff="easy" class="soft-box choice-btn"><strong style="font-size:10px;">Fácil</strong></button>
-                    <button type="button" data-diff="medium" class="soft-box choice-btn"><strong style="font-size:10px;">Médio</strong></button>
-                    <button type="button" data-diff="hard" class="soft-box choice-btn"><strong style="font-size:10px;">Mestre</strong></button>
+                    <button type="button" data-diff="easy" class="soft-box choice-btn"><strong style="font-size:11.5px;">Fácil</strong></button>
+                    <button type="button" data-diff="medium" class="soft-box choice-btn"><strong style="font-size:11.5px;">Médio</strong></button>
+                    <button type="button" data-diff="hard" class="soft-box choice-btn"><strong style="font-size:11.5px;">Mestre</strong></button>
                   </div>
                 </div>
               </div>
@@ -1056,7 +1093,7 @@
               <div class="soft-box" style="padding:9px 11px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div>
                   <div style="font-size:11.5px; font-weight:900;">📚 Empilhar Jogos Automaticamente</div>
-                  <div style="font-size:10px; color:var(--text-muted);">Junta 3 cartas prontas uma sobre a outra na mão</div>
+                  <div style="font-size:11px; color:var(--text-muted);">Junta 3 cartas prontas uma sobre a outra na mão</div>
                 </div>
                 <button type="button" id="btn-toggle-autostack" class="btn-primary" style="padding:6px 12px; font-size:11px;">ATIVO</button>
               </div>
@@ -1064,7 +1101,7 @@
               <div class="soft-box" style="padding:9px 11px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div>
                   <div style="font-size:11.5px; font-weight:900;">🧩 Jogos Longos (4+ cartas)</div>
-                  <div style="font-size:10px; color:var(--text-muted);">Clássico: só jogos de 3. Longos: aceita sequência 4-5-6-7 e quadra</div>
+                  <div style="font-size:11px; color:var(--text-muted);">Clássico: só jogos de 3. Longos: aceita sequência 4-5-6-7 e quadra</div>
                 </div>
                 <button type="button" id="btn-toggle-longmelds" class="btn-primary" style="padding:6px 12px; font-size:11px;">CLÁSSICO</button>
               </div>
@@ -1077,19 +1114,19 @@
                 <div class="grid-2">
                   <button type="button" data-set-theme="azulejo" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
                     <div style="font-size:12px; font-weight:900;">🏛️ Azulejo &amp; Cedro</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Madeira quente &amp; azul-cobalto</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Madeira quente &amp; azul-cobalto</div>
                   </button>
                   <button type="button" data-set-theme="kraft" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
                     <div style="font-size:12px; font-weight:900;">☕ Café &amp; Papel Kraft</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Textura artesanal &amp; terracota</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Textura artesanal &amp; terracota</div>
                   </button>
                   <button type="button" data-set-theme="quiosque" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
                     <div style="font-size:12px; font-weight:900;">🏖️ Quiosque &amp; Brisa</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Areia clara, turquesa &amp; coral</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Areia clara, turquesa &amp; coral</div>
                   </button>
                   <button type="button" data-set-theme="seresta" class="soft-box choice-btn" style="text-align:left; padding:9px 11px;">
                     <div style="font-size:12px; font-weight:900;">🌙 Seresta Noturna</div>
-                    <div style="font-size:10px; color:var(--text-muted);">Azul-petróleo &amp; latão dourado</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Azul-petróleo &amp; latão dourado</div>
                   </button>
                 </div>
               </div>
@@ -1163,8 +1200,8 @@
           </div>
         </main>
 
-        <footer class="shell-width hide-landscape" style="text-align:center; font-size:10px; color:var(--header-txt); opacity:0.9;">
-          Arraste para os lados para ordenar • Arraste uma carta para cima para descartar na Lixeira!
+        <footer class="shell-width hide-landscape" style="text-align:center; font-size:11.5px; color:var(--header-txt); opacity:0.9;">
+          Na sua vez: 1) compre uma carta • 2) descarte outra. Junte 9 cartas em jogos para bater! Dúvidas? Toque em ❓
         </footer>
       </div>
 
@@ -1179,10 +1216,10 @@
           </div>
 
           <div style="display:flex; align-items:center; gap:5px;">
-            <button type="button" id="btn-game-theme" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Trocar Tema">🎨</button>
-            <button type="button" id="btn-game-mute" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Som">🔊</button>
-            <button type="button" id="btn-game-help" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Regras">?</button>
-            <button type="button" id="btn-game-exit" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Sair">✕</button>
+            <button type="button" id="btn-game-theme" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Trocar Tema" aria-label="Trocar tema">🎨</button>
+            <button type="button" id="btn-game-mute" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Som" aria-label="Som">🔊</button>
+            <button type="button" id="btn-game-help" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Como jogar" aria-label="Como jogar">❓</button>
+            <button type="button" id="btn-game-exit" class="header-chip" style="padding:6px 10px; font-size:12px; font-weight:900;" title="Sair da partida" aria-label="Sair da partida">✕</button>
           </div>
         </header>
 
@@ -1191,7 +1228,7 @@
 
         <!-- Centro da Mesa: Monte Fechado & Boca do Lixo -->
         <main class="shell-width table-center-piles">
-          <div id="turn-status-pill" class="header-chip" style="padding:5px 14px; font-size:11.5px; font-weight:900; text-align:center;">
+          <div id="turn-status-pill" class="header-chip turn-status-pill" role="status" aria-live="polite">
             Sua vez! Compre do Monte ou da Lixeira.
           </div>
 
@@ -1206,7 +1243,7 @@
                 <span style="font-size:24px;">🃏</span>
                 <span id="stock-count-lbl" style="font-size:11px; font-weight:900; margin-top:4px;">–</span>
               </div>
-              <span class="header-chip" style="padding:2px 8px; font-size:10px; font-weight:900;">MONTE</span>
+              <span class="header-chip" style="padding:3px 10px; font-size:11px; font-weight:900;">MONTE (comprar)</span>
             </div>
 
             <!-- Boca do Lixo (Alvo de Descarte por Toque ou Arraste para Cima) -->
@@ -1214,7 +1251,7 @@
               <div id="discard-card-box" class="card-pile-box discard-face">
                 <span style="font-size:11px; color:var(--text-muted); font-weight:900; margin:auto;">VAZIO</span>
               </div>
-              <span id="discard-pile-lbl" class="header-chip" style="padding:2px 8px; font-size:10px; font-weight:900;">LIXEIRA</span>
+              <span id="discard-pile-lbl" class="header-chip" style="padding:3px 10px; font-size:11px; font-weight:900;">LIXEIRA</span>
             </div>
           </div>
 
@@ -1236,12 +1273,12 @@
                   <span id="local-seat-name" class="font-serif-title" style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Você</span>
                   <span id="local-team-badge" class="hidden" style="font-size:9px; padding:1px 6px; border-radius:6px; font-weight:900;">DUPLA A</span>
                 </div>
-                <div id="local-hand-hint" class="hide-landscape" style="font-size:9.5px; color:var(--text-muted);">Arraste ◀▶ para ordenar • Arraste ⬆️ ou toque 2x para descartar</div>
+                <div id="local-hand-hint" class="hide-landscape" style="font-size:11px; color:var(--text-muted);">Toque 2x numa carta para descartar • Arraste para os lados para organizar</div>
               </div>
             </div>
 
             <div style="text-align:right;">
-              <span id="local-points-badge" style="font-size:11px; font-weight:900; color:var(--accent-gold);">0 pts</span>
+              <span id="local-points-badge" style="font-size:12px; font-weight:900; color:var(--accent-gold); white-space:nowrap;">0 pts</span>
             </div>
           </div>
 
@@ -1251,12 +1288,12 @@
           <!-- Barra de Organização Manual & Agrupamento de Jogos -->
           <div class="reorder-bar">
             <div style="display:flex; gap:4px;">
-              <button type="button" id="btn-move-left" class="mini-tool-btn" title="Mover carta para esquerda" disabled>◀</button>
-              <button type="button" id="btn-move-right" class="mini-tool-btn" title="Mover carta para direita" disabled>▶</button>
+              <button type="button" id="btn-move-left" class="mini-tool-btn" title="Mover carta para esquerda" aria-label="Mover carta para esquerda" disabled>◀</button>
+              <button type="button" id="btn-move-right" class="mini-tool-btn" title="Mover carta para direita" aria-label="Mover carta para direita" disabled>▶</button>
             </div>
 
             <button type="button" id="btn-stack-melds" class="mini-tool-btn" style="color:var(--accent-gold); border-color:var(--accent-gold);">
-              📚 Empilhar Jogos
+              📚 Juntar Jogos
             </button>
 
             <button type="button" id="btn-sort-hand" class="mini-tool-btn">
@@ -1266,13 +1303,13 @@
 
           <!-- Botões Principais de Abertura, Descarte e Batida -->
           <div class="hand-controls-row">
-            <button type="button" id="btn-expand-all" class="soft-box" style="padding:10px 9px; font-size:10.5px; font-weight:900;" title="Abrir todas as pilhas">
+            <button type="button" id="btn-expand-all" class="soft-box" style="padding:12px 10px; min-height:48px; font-size:12px; font-weight:900;" title="Abrir todas as pilhas" aria-label="Abrir todos os montinhos">
               📂 Abrir
             </button>
-            <button type="button" id="btn-discard-selected" class="btn-primary" style="padding:10px 8px; font-size:11.5px; text-transform:uppercase;">
+            <button type="button" id="btn-discard-selected" class="btn-primary" style="padding:12px 8px; min-height:48px; font-size:13px; text-transform:uppercase;">
               🗑️ Descartar
             </button>
-            <button type="button" id="btn-bater" class="btn-primary" style="padding:10px 8px; font-size:12px; text-transform:uppercase;">
+            <button type="button" id="btn-bater" class="btn-primary" style="padding:12px 8px; min-height:48px; font-size:14px; text-transform:uppercase;">
               🏆 BATER!
             </button>
           </div>
@@ -1295,6 +1332,11 @@
       </div>
 
       <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; line-height:1.45;">
+        <div class="soft-box" style="padding:9px 11px; border-color:var(--accent-win);">
+          <strong style="color:var(--accent-win);">🎯 Objetivo:</strong>
+          <div>Juntar as cartas da mão em <strong>jogos de 3</strong> (trincas ou sequências). Quem formar 3 jogos (9 cartas) primeiro <strong>bate</strong> e vence a mão.</div>
+        </div>
+
         <div class="soft-box" style="padding:9px 11px;">
           <strong style="color:var(--accent-primary);">🔄 Sua Vez:</strong>
           <div>1. <strong>Compre</strong> uma carta do <strong>MONTE</strong> ou a de cima da <strong>LIXEIRA</strong>.</div>
