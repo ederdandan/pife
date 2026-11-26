@@ -694,6 +694,32 @@
       box-shadow: -4px 0 0 0 var(--accent-gold), 0 6px 14px rgba(0, 0, 0, 0.25);
     }
 
+    /* Curingas (coringa ★, 2 curinga ou curinga da vira) */
+    .pife-card-unit.wild-card,
+    .stacked-leaf-card.wild-card,
+    .card-pile-box.wild-face {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.28), 0 4px 10px rgba(0, 0, 0, 0.18);
+    }
+    .pife-card-unit.wild-card::after {
+      content: '★';
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      color: #a855f7;
+      font-weight: 900;
+    }
+    .pife-card-unit.wild-card.new-card::after {
+      content: 'NOVA ★';
+      bottom: auto;
+      right: auto;
+      color: #fff;
+      font-size: 8px;
+    }
+    .vira-slot { cursor: default; }
+    .vira-slot:active { transform: none; }
+
     .card-corner { display: flex; justify-content: space-between; font-size: calc(var(--card-font) + 1px); font-weight: 900; line-height: 1; }
     .card-center { font-size: var(--card-sym); text-align: center; line-height: 1; }
 
@@ -1072,6 +1098,28 @@
                 </div>
               </div>
 
+              <div>
+                <span class="lbl-micro">Variação do Jogo</span>
+                <div class="grid-2" style="gap:6px;">
+                  <button type="button" data-variant="classico" class="soft-box choice-btn" style="text-align:left; padding:8px 10px;">
+                    <div style="font-size:11.5px; font-weight:900;">🃏 Clássico</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">Sem curingas, só jogos puros</div>
+                  </button>
+                  <button type="button" data-variant="coringa" class="soft-box choice-btn" style="text-align:left; padding:8px 10px;">
+                    <div style="font-size:11.5px; font-weight:900;">★ Com Coringas</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">+4 coringas que valem qualquer carta</div>
+                  </button>
+                  <button type="button" data-variant="dois" class="soft-box choice-btn" style="text-align:left; padding:8px 10px;">
+                    <div style="font-size:11.5px; font-weight:900;">2️⃣ 2 é Curinga</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">Todo 2 substitui qualquer carta</div>
+                  </button>
+                  <button type="button" data-variant="vira" class="soft-box choice-btn" style="text-align:left; padding:8px 10px;">
+                    <div style="font-size:11.5px; font-weight:900;">🔄 Vira</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">Vira uma carta: a seguinte é curinga</div>
+                  </button>
+                </div>
+              </div>
+
               <div class="grid-2" style="gap:8px;">
                 <div>
                   <span class="lbl-micro">Regra de Vitória</span>
@@ -1253,6 +1301,12 @@
               </div>
               <span id="discard-pile-lbl" class="header-chip" style="padding:3px 10px; font-size:11px; font-weight:900;">LIXEIRA</span>
             </div>
+
+            <!-- Vira (variação "Vira"): só mostra, não é clicável -->
+            <div id="pile-vira" class="pile-slot vira-slot hidden" aria-label="Carta da vira">
+              <div id="vira-card-box" class="card-pile-box discard-face wild-face"></div>
+              <span id="vira-pile-lbl" class="header-chip" style="padding:3px 10px; font-size:11px; font-weight:900;">VIRA</span>
+            </div>
           </div>
 
           <div style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center;">
@@ -1260,6 +1314,7 @@
               📚 Em jogos: 0/9
             </div>
             <div id="score-pill" class="header-chip hidden" style="padding:4px 12px; font-size:11px; font-weight:900;"></div>
+            <div id="wild-pill" class="header-chip hidden" style="padding:4px 12px; font-size:11px; font-weight:900;"></div>
           </div>
         </main>
 
@@ -1355,6 +1410,15 @@
           <div>• <strong>Trinca</strong>: 3 cartas de mesmo valor e naipes diferentes (ex.: <code>7♠ 7♥ 7♦</code>).</div>
           <div>• <strong>Sequência</strong>: mesmo naipe em ordem (ex.: <code>4♣ 5♣ 6♣</code>, <code>A-2-3</code> ou <code>Q-K-A</code>).</div>
           <div>• Modo <strong>Jogos Longos</strong>: aceita sequências de 4+ cartas e quadras.</div>
+        </div>
+
+        <div class="soft-box" style="padding:9px 11px;">
+          <strong style="color:#a855f7;">★ Variações com Curinga:</strong>
+          <div>• <strong>Com Coringas</strong>: entram 4 coringas 🃏 no baralho.</div>
+          <div>• <strong>2 é Curinga</strong>: todo 2 vale qualquer carta (ou vale como 2 mesmo).</div>
+          <div>• <strong>Vira</strong>: no início da mão uma carta é virada na mesa (fica fora do jogo). A carta <strong>seguinte</strong> a ela é o curinga (vira 7 → curinga 8; vira K → curinga A).</div>
+          <div>• O curinga substitui a carta que falta: <code>7♠ 7♥ ★</code> ou <code>4♣ ★ 6♣</code>.</div>
+          <div>• Só <strong>1 curinga por jogo</strong>. Curinga que sobra na mão vale <strong>20 pts</strong>.</div>
           <div>• Toque num montinho para abri-lo.</div>
         </div>
 
