@@ -717,6 +717,21 @@
       color: #fff;
       font-size: 8px;
     }
+    .pife-card-unit.wild-card,
+    .stacked-leaf-card.wild-card {
+      background: linear-gradient(160deg, #faf5ff 0%, #ede9fe 100%);
+      border-width: 2.5px;
+    }
+    .joker-center { font-size: calc(var(--card-sym) + 4px); }
+    .joker-tag {
+      font-size: 7px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      color: #7c3aed;
+      text-align: center;
+      line-height: 1;
+    }
+    .pife-card-unit.wild-card:not(.new-card):has(.joker-tag)::after { content: none; }
     .vira-slot { cursor: default; }
     .vira-slot:active { transform: none; }
 
@@ -1115,7 +1130,7 @@
                   </button>
                   <button type="button" data-variant="vira" class="soft-box choice-btn" style="text-align:left; padding:8px 10px;">
                     <div style="font-size:11.5px; font-weight:900;">🔄 Vira</div>
-                    <div style="font-size:10.5px; color:var(--text-muted);">Vira uma carta: a seguinte é curinga</div>
+                    <div style="font-size:10.5px; color:var(--text-muted);">Carta virada: a seguinte, mesma cor, é curinga</div>
                   </button>
                 </div>
               </div>
@@ -1416,7 +1431,7 @@
           <strong style="color:#a855f7;">★ Variações com Curinga:</strong>
           <div>• <strong>Com Coringas</strong>: entram 4 coringas 🃏 no baralho.</div>
           <div>• <strong>2 é Curinga</strong>: todo 2 vale qualquer carta (ou vale como 2 mesmo).</div>
-          <div>• <strong>Vira</strong>: no início da mão uma carta é virada na mesa (fica fora do jogo). A carta <strong>seguinte</strong> a ela é o curinga (vira 7 → curinga 8; vira K → curinga A).</div>
+          <div>• <strong>Vira</strong> (regra da Cacheta): no início da mão uma carta do monte é virada na mesa e fica fora do jogo. O curinga é a carta <strong>seguinte</strong> a ela, <strong>da mesma cor</strong> (vira 8♣ → curingas 9♣ e 9♠; vira K♥ → curingas A♥ e A♦). As outras cartas desse valor são comuns.</div>
           <div>• O curinga substitui a carta que falta: <code>7♠ 7♥ ★</code> ou <code>4♣ ★ 6♣</code>.</div>
           <div>• Só <strong>1 curinga por jogo</strong>. Curinga que sobra na mão vale <strong>20 pts</strong>.</div>
           <div>• Toque num montinho para abri-lo.</div>

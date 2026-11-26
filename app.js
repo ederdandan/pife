@@ -254,7 +254,7 @@
     classico: { label: 'Clássico', short: 'Clássico', toast: '🃏 Clássico: sem curingas.' },
     coringa: { label: 'Com Coringas', short: 'Coringas ★', toast: '★ Com Coringas: 4 coringas no baralho, valem qualquer carta.' },
     dois: { label: '2 é Curinga', short: '2 Curinga', toast: '★ 2 é Curinga: todo 2 substitui qualquer carta (ou vale como 2).' },
-    vira: { label: 'Vira', short: 'Vira', toast: '★ Vira: uma carta é virada na mesa; a SEGUINTE a ela é o curinga.' }
+    vira: { label: 'Vira', short: 'Vira', toast: '★ Vira: uma carta é virada na mesa; a SEGUINTE a ela, da mesma cor, é o curinga.' }
   };
   const WILD_PTS = 20;
   const JOKER_SUIT = 'X';
@@ -377,11 +377,21 @@
     return null;
   }
 
+  // Vira (regra da Cacheta): curinga é a carta seguinte à vira, da MESMA COR
+  // (vira 8♣ → todos os 9♣ e 9♠ = 4 curingas com 2 baralhos).
   function isWild(c) {
     if (!c) return false;
     if (c.suit === JOKER_SUIT) return true;
     const wv = wildRankVal();
-    return wv !== null && c.val === wv;
+    if (wv === null || c.val !== wv) return false;
+    return state.variant !== 'vira' || c.color === state.viraCard.color;
+  }
+
+  // Texto do curinga da vira, ex.: "9 pretos (♠♣)".
+  function viraWildText() {
+    if (!state.viraCard) return '';
+    const syms = SUITS.filter(s => s.color === state.viraCard.color).map(s => s.sym).join('');
+    return `${rankLabel(wildRankVal())} ${state.viraCard.color === 'red' ? 'vermelhos' : 'pretos'} (${syms})`;
   }
 
   // Pontos de penalidade da carta solta (curinga sobrando pesa mais).
@@ -504,7 +514,8 @@
   // Solver exato: maximiza cartas em jogos (desempate: mais pontos em jogos).
   function analyzeHandMelds(cards) {
     const n = cards.length;
-    const key = (state.longMelds ? 'L' : 'C') + state.variant + (wildRankVal() || '') + ':' +
+    const key = (state.longMelds ? 'L' : 'C') + state.variant + (wildRankVal() || '') +
+      (state.viraCard ? state.viraCard.color : '') + ':' +
       cards.map(c => c.uid).sort((a, b) => a - b).join(',');
     const hit = meldCache.get(key);
     if (hit) return hit;
@@ -782,6 +793,7 @@
 
     const me = getLocalPlayer();
     if (me && state.autoStackMelds) autoGroupValidMelds(me.hand, true);
+    if (me) announceWildsInHand(me.hand);
 
     state.discardPile.push(state.stock.pop());
     state.turnIndex = (state.handNumber - 1) % state.players.length;
@@ -858,6 +870,7 @@
       state.lastDrawnUid = drawn.uid;
       state.selectedCardUid = null;
       sfx.drawCard();
+      if (isWild(drawn)) showToast('★ Você comprou um CURINGA!');
       if (state.autoStackMelds) {
         const prevStacks = state.stackedMelds.length;
         autoGroupValidMelds(curr.hand, true);
@@ -1147,8 +1160,9 @@
     const col = suitColor(c);
     if (c.suit === JOKER_SUIT) {
       return `
-      <div class="card-corner" style="color:${col};"><span>JK</span><span>★</span></div>
-      <div class="card-center" style="color:${col};">🃏</div>
+      <div class="card-corner" style="color:${col};"><span>★</span><span>★</span></div>
+      <div class="card-center joker-center">🃏</div>
+      <div class="joker-tag">CORINGA</div>
     `;
     }
     return `
@@ -1282,7 +1296,7 @@
               <span>${c.label}</span>
               <span>${c.sym}</span>
             </div>
-            <div style="font-size:15px; color:${col}; align-self:flex-end; line-height:1;">${c.sym}</div>
+            <div style="font-size:15px; color:${col}; align-self:flex-end; line-height:1;">${c.suit === JOKER_SUIT ? '🃏' : c.sym}</div>
           </div>
         `;
       }).join('');
@@ -1345,6 +1359,13 @@
     }
   }
 
+  // Avisa o jogador local quantos curingas tem na mão (o montinho pode escondê-los).
+  function announceWildsInHand(hand) {
+    if (state.variant === 'classico' || !hand) return;
+    const n = hand.filter(isWild).length;
+    if (n > 0) setTimeout(() => showToast(`★ Você recebeu ${n} curinga${n > 1 ? 's' : ''}! (borda roxa na mão)`), 600);
+  }
+
   // Carta da vira + lembrete de qual é o curinga da mão.
   function renderWildInfo() {
     const pill = $('wild-pill');
@@ -1360,13 +1381,13 @@
         <div style="font-size:26px; color:${col}; line-height:1;">${vira.sym}</div>
         <div style="font-size:9.5px; font-weight:900; color:var(--text-muted); text-align:center;">fora do jogo</div>
       `;
-      $('vira-pile-lbl').textContent = `VIRA → ★ ${rankLabel(wildRankVal())}`;
+      $('vira-pile-lbl').textContent = `VIRA → ★ ${rankLabel(wildRankVal())}${state.viraCard.color === 'red' ? '♥♦' : '♠♣'}`;
     }
 
     let txt = '';
     if (state.variant === 'coringa') txt = '🃏 4 coringas ★ no baralho • 1 por jogo';
     else if (state.variant === 'dois') txt = '★ Curinga: todo 2 • 1 por jogo';
-    else if (vira) txt = `★ Curinga desta mão: todo ${rankLabel(wildRankVal())} • 1 por jogo`;
+    else if (vira) txt = `★ Curinga desta mão: ${viraWildText()} • 1 por jogo`;
     pill.classList.toggle('hidden', !txt);
     pill.textContent = txt;
   }
@@ -2251,9 +2272,11 @@
       state.lastDrawnUid = null;
       sortPlayerHand(meRemote, state.sortMode);
       if (state.autoStackMelds) autoGroupValidMelds(meRemote.hand, true);
+      announceWildsInHand(meRemote.hand);
     } else if (added.length === 1 && isMyTurn() && state.turnStep === 'discard') {
       state.lastDrawnUid = added[0].uid;
       sfx.drawCard();
+      if (isWild(added[0])) showToast('★ Você comprou um CURINGA!');
       if (state.autoStackMelds) autoGroupValidMelds(meRemote.hand, true);
     }
     if (!meRemote.hand.some(c => c.uid === state.selectedCardUid)) state.selectedCardUid = null;
