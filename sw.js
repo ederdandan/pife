@@ -1,5 +1,5 @@
 /* Service Worker do Pife de Varanda: rede primeiro, cache como reserva offline. */
-const CACHE = 'pife-varanda-v9';
+const CACHE = 'pife-varanda-v10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -27,6 +27,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Métricas (GoatCounter): sempre pela rede, nunca no cache.
+  if (/goatcounter\.com|gc\.zgo\.at/.test(event.request.url)) return;
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
